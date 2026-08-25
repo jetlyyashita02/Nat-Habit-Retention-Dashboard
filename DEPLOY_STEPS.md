@@ -20,7 +20,16 @@ You have TWO products in this download:
 4. Click the green **Commit changes** button
 5. Wait 1 minute → open your link → if it looks unchanged, press **Ctrl + Shift + R**
 
-✅ Done — this version has all 12 dynamic conclusions + private CSV loader.
+✅ Done — the public dashboard now has **6 tabs**:
+- 🏠 **Overview** — filters, tiles, 12 dynamic conclusions (works on the bundled sample)
+- 🔁 **Migration** — category/variant/SKU matrices, top flows, net gravity (works on the sample)
+- 📄 **Quarterly Insights** — the auto-written QBR narrative for any category × quarter (works on the sample)
+- 💰 **Sales & Revenue** — click 📂 and load your sales CSV (private, in-browser)
+- 🗣️ **NPS & CS** — click 📂 and load your NPS + CS CSVs (private, in-browser)
+- 🆕 **New-to-Category** — click 📂 and load your order-movement CSV (private, in-browser)
+
+Note: the first three tabs work instantly with the bundled sample; the last three
+activate when you load your own CSVs — nothing is uploaded anywhere.
 
 > Do NOT upload anything else to this public repo — only `index.html` is
 > public-safe. Pages setting stays: Branch `main`, folder `/ (root)`.

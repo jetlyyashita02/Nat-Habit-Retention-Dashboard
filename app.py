@@ -21,9 +21,9 @@ st.set_page_config(page_title="Nat Habit — Retention Dashboard",
                    page_icon="🧴", layout="wide",
                    initial_sidebar_state="expanded")
 
-BRAND = {"Cold Winter": "#2E6F8E", "Hot Dry": "#E4A11B",
-         "Hot Humid": "#3C8C6E", "Non-Seasonal (Concern)": "#8E5AA8",
-         "Post-Monsoon": "#7A6A55", "Gel": "#C46A4B"}
+BRAND = {"Cold Winter": "#2E6F8E", "Hot Dry": "#2A9D8F",
+         "Hot Humid": "#E8604A", "Non-Seasonal (Concern)": "#8E5AA8",
+         "Post-Monsoon": "#7A6A55", "Gel": "#C0392B"}
 
 SAMPLE_PATH = "data/raw_dump.csv"          # <- drop your full 155k dump here
 SAMPLE_FALLBACK = "data/sample_journeys.csv"
@@ -237,7 +237,7 @@ with tab1:
         monthly = (orders.groupby("month").size().reset_index(name="orders"))
         fig = px.bar(monthly, x="month", y="orders",
                      title="Orders by month (cohort)",
-                     color_discrete_sequence=["#3C8C6E"])
+                     color_discrete_sequence=["#E8604A"])
         fig.update_layout(margin=dict(t=40, b=10), height=300, xaxis_title=None)
         st.plotly_chart(fig, width='stretch')
     with right:
@@ -245,7 +245,7 @@ with tab1:
         tsv.columns = ["season", "orders"]
         fig2 = px.bar(tsv, x="season", y="orders", title="Orders by purchase-month season",
                       color="season",
-                      color_discrete_map={s: BRAND.get(s.replace(" (Dec-Feb)", " Cold Winter"), "#3C8C6E") for s in tsv["season"]})
+                      color_discrete_map={s: BRAND.get(s.replace(" (Dec-Feb)", " Cold Winter"), "#E8604A") for s in tsv["season"]})
         fig2.update_layout(margin=dict(t=40, b=10), height=300,
                            showlegend=False, xaxis_title=None)
         st.plotly_chart(fig2, width='stretch')
@@ -259,8 +259,8 @@ with tab2:
     cons = M.conclusions(d if not d.empty else long_df)
     for i, c in enumerate(cons):
         st.markdown(
-            f"<div style='border-left:4px solid #3C8C6E;padding:8px 14px;"
-            f"margin:6px 0;background:#F4F9F5;border-radius:4px'>"
+            f"<div style='border-left:4px solid #E8604A;padding:8px 14px;"
+            f"margin:6px 0;background:#FFF1EC;border-radius:4px'>"
             f"<b>{c['q']}</b><br><span style='color:#333'>{c['a']}</span></div>",
             unsafe_allow_html=True)
     st.download_button(
