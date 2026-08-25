@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nat Habit — Retention Dashboard</title>
+<style>
+  :root{--green:#3C8C6E;--dark:#1F4D3F;--light:#EAF3EE;--grey:#F5F6F5;--amber:#E4A11B;--ink:#222;--muted:#667;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;color:var(--ink);background:#FAFBFA}
+  header{background:linear-gradient(90deg,var(--dark),var(--green));color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+  header h1{font-size:20px;font-weight:700;letter-spacing:.2px}
+  header .sub{font-size:12px;opacity:.85;margin-top:2px}
+  .src{font-size:12px;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:6px}
+  .filewrap{display:flex;gap:8px;align-items:center}
+  .filewrap label{background:#fff;color:var(--dark);font-weight:600;font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;border:none}
+  .filewrap input[type=file]{display:none}
+  .bar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #E3E8E5;padding:10px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+  .f{display:flex;flex-direction:column;gap:3px}
+  .f label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  select{border:1px solid #CBD5CE;border-radius:6px;padding:7px 8px;font-size:13px;background:#fff;min-width:130px;max-width:210px}
+  main{padding:20px 24px;max-width:1500px;margin:0 auto}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+  .card{background:#fff;border:1px solid #E3E8E5;border-radius:10px;padding:12px 14px;box-shadow:0 1px 2px rgba(20,60,40,.04)}
+  .card .v{font-size:22px;font-weight:800;color:var(--dark)}
+  .card .l{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
+  h2.sec{font-size:13px;letter-spacing:1px;color:#fff;background:var(--green);display:inline-block;padding:4px 12px;border-radius:5px;margin:14px 0 10px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:8px}
+  .tile{background:#fff;border:1px solid #E3E8E5;border-left:4px solid var(--green);border-radius:8px;padding:10px 12px}
+  .tile.peak{border-left-color:var(--amber)}
+  .tile .v{font-size:20px;font-weight:800;color:var(--dark)}
+  .tile .l{font-size:11px;color:var(--muted);font-weight:600}
+  .mini{font-size:11px;color:var(--muted);margin:4px 0 12px}
+  .concl{display:flex;flex-direction:column;gap:8px;margin:10px 0 6px}
+  .cblock{background:var(--light);border-left:4px solid var(--green);border-radius:6px;padding:10px 14px}
+  .cblock b{color:var(--dark);font-size:13px}
+  .cblock span{display:block;font-size:13px;color:#333;margin-top:3px;line-height:1.45}
+  table{border-collapse:collapse;width:100%;background:#fff;font-size:12px}
+  th{background:var(--green);color:#fff;padding:8px 8px;text-align:left;font-weight:600;position:sticky;top:0}
+  td{padding:6px 8px;border-bottom:1px solid #EEF2EF}
+  tr:hover td{background:#F4F9F5}
+  td.num,th.num{text-align:right}
+  .tblwrap{border:1px solid #E3E8E5;border-radius:10px;overflow:auto;max-height:480px;margin-top:8px}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+  .controls input[type=search]{border:1px solid #CBD5CE;border-radius:6px;padding:7px 10px;font-size:13px;min-width:240px}
+  .btn{background:var(--green);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer}
+  .btn.ghost{background:#fff;color:var(--green);border:1px solid var(--green)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .pginfo{font-size:12px;color:var(--muted);margin-left:auto}
+  details{background:#fff;border:1px solid #E3E8E5;border-radius:10px;padding:12px 16px;margin:14px 0;font-size:13px}
+  summary{font-weight:700;color:var(--dark);cursor:pointer}
+  details p{margin:8px 0;color:#444;line-height:1.5}
+  .chart{background:#fff;border:1px solid #E3E8E5;border-radius:10px;padding:12px;margin:8px 0}
+  footer{color:var(--muted);font-size:11px;text-align:center;padding:18px}
+  #busy{position:fixed;inset:0;background:rgba(250,251,250,.8);display:none;align-items:center;justify-content:center;z-index:99;font-weight:700;color:var(--dark)}
+</style>
+</head>
+<body>
+<div id="busy">⏳ Parsing data…</div>
+<header>
+  <div>
+    <h1>🧴 Nat Habit — Retention Dashboard</h1>
+    <div class="sub">Cohort retention · seasonality · migration · loyalty · orders Jan 2024 → Jun 2026 · filters apply to each customer's first (entry) order</div>
+  </div>
+  <div class="filewrap">
+    <span class="src" id="srcnote">Bundled sample (655 customers)</span>
+    <label>📂 Load your CSV<input type="file" id="csvfile" accept=".csv"></label>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="f"><label>Category</label><select id="f_cat"></select></div>
+  <div class="f"><label>Variant (SKU)</label><select id="f_sku"></select></div>
+  <div class="f"><label>From month</label><select id="f_from"></select></div>
+  <div class="f"><label>To month</label><select id="f_to"></select></div>
+  <div class="f"><label>Journey depth</label><select id="f_depth"></select></div>
+  <div class="f"><label>Geo region</label><select id="f_region"></select></div>
+  <button class="btn ghost" id="reset">Reset filters</button>
+</div>
+
+<main>
+  <div class="kpis" id="kpis"></div>
+
+  <h2 class="sec">SEASONALITY — orders by variant's intended season</h2>
+  <div class="tiles" id="seasTiles"></div>
+  <div class="mini" id="timingRow"></div>
+  <div class="chart"><div id="monthChart"></div></div>
+
+  <h2 class="sec">GELS &amp; TOTALS</h2>
+  <div class="tiles" id="gelTiles"></div>
+
+  <h2 class="sec">LOYALTY &amp; JOURNEY</h2>
+  <div class="tiles" id="loyTiles"></div>
+  <div class="mini" id="loyNote"></div>
+
+  <h2 class="sec">FORMULA-DRIVEN CONCLUSIONS</h2>
+  <div class="concl" id="concl"></div>
+
+  <h2 class="sec">VARIANT SUMMARY</h2>
+  <div class="tblwrap" style="max-height:420px"><table id="varTable"></table></div>
+
+  <h2 class="sec">JOURNEYS</h2>
+  <div class="controls">
+    <input type="search" id="q" placeholder="🔍 search customer, city, SKU…">
+    <select id="pagesize"><option>25</option><option selected>50</option><option>100</option><option>500</option></select>
+    <button class="btn ghost" id="prev">⬅ Prev</button><button class="btn ghost" id="next">Next ➡</button>
+    <span class="pginfo" id="pginfo"></span>
+    <button class="btn" id="dl">⬇ Export filtered CSV</button>
+  </div>
+  <div class="tblwrap"><table id="jourTable"></table></div>
+
+  <details><summary>📖 Definitions &amp; SKU decoder</summary>
+    <p><b>Filters:</b> Category / Variant / From–To month apply to each customer's <b>first (entry) order</b> (cohort semantics). Journey depth = total orders. Region = city mapped to North / West / South / East / Rest of India.</p>
+    <p><b>Seasonality tiles:</b> orders counted by the variant's <i>intended</i> season line; Peak Season = largest bucket. <b>Purchase timing:</b> orders by calendar month — Cold Winter Dec–Feb · Hot Dry Mar–May · Hot Humid Jun–Sep · Post-Monsoon Oct–Nov.</p>
+    <p><b>V2V Loyalty %</b> — customers with ≥2 orders whose 2nd order repeats an entry <i>variant</i>; <b>V2C</b> — 2nd order stays in an entry <i>category</i>. Avg Purchase Days = mean order1→order2 days within those groups; Avg Order Count = mean total orders of those groups.</p>
+    <p><b>Seasonality strength:</b> Highly ≥40% of orders in peak timing season · Moderately 30–40% · Evergreen &lt;30%. <b>Grammage:</b> Upsized = larger size · Lateral = same size other category · Downsized = smaller.</p>
+    <p><b>SKU code</b> <code>FC-&lt;LINE&gt;-&lt;VARIANT&gt;-&lt;SIZE&gt;</code> — e.g. <code>FC-HDDM-FB-050</code> = Face Malai · Hot Dry · Flax Bakuchi · 50g. Lines: CWDM Cold Winter · HDDM Hot Dry · HHDM Hot Humid · DM non-seasonal concern · AC Active Gel · HG Aloe Vera Gel. Multi-item orders are analysed on every item for tiles/loyalty and on the first SKU for transitions/conclusions.</p>
+    <p><b>Privacy:</b> the file-picker reads your CSV entirely inside your browser — nothing is uploaded to any server.</p>
+  </details>
+  <footer>Static dashboard for GitHub Pages · self-contained, no server, no tracking · built from the raw journey dump</footer>
+</main>
+
+<script type="text/csv" id="sampleCSV">
+Name,category_first,category_2nd,category_3rd,category_4th,category_5th,category_6th,first_purchased_short_code,second_purchased_short_code,third_purchased_short_code,fourth_purchased_short_code,fifth_purchased_short_code,sixth_purchased_short_code,first_purchased_sku,second_purchased_sku,third_purchased_sku,fourth_purchased_sku,fifth_purchased_sku,sixth_purchased_sku,first_order_date,second_order_date,third_order_date,fourth_order_date,fifth_order_date,sixth_order_date,days_between_1st_and_2nd,days_between_2nd_and_3rd,days_between_3rd_and_4th,days_between_4th_and_5th,days_between_5th_and_6th,city,Month-Year,Month Number ,Journey Depth,Is Repeat Buyer? 
+27692,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,,FC-DM-PG-050,,,,,,"Jan 15, 2026",,,,,,,,,,,Gurgaon,2026-01,1,1,0
+27835,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,,,,,FC-HHDM-FC-050,,,,,,"Jun 22, 2026",,,,,,,,,,,Gurgaon,2026-06,6,1,0
+27851,"Active Gel, Face Malai",,,,,,"Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g, Active Neem TeaTree Gel",,,,,,"FC-HDDM-FB-050, FC-AC-NT-050",,,,,,"May 10, 2026",,,,,,,,,,,New Delhi,2026-05,5,1,0
+27893,Face Malai,,,,,,Pomegranate Tulsi (Hot Dry) 13 - 19 Yrs Face Malai,,,,,,FC-HDDM-PT-030,,,,,,"Apr 7, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-04,4,1,0
+28176,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 20, 2024",,,,,,,,,,,New Delhi,2024-11,11,1,0
+28252,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jul 4, 2025",,,,,,,,,,,New Delhi,2025-07,7,1,0
+28597,"Active Gel, Face Malai","Active Gel, Aloe Vera Gel",Active Gel,Active Gel,,,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Active Orange Kiwi Vit-C Gel","Aloe Vera Gel - 40 gms, Active Beetroot Tomato Vit-A Gel",Active Orange Kiwi Vit-C Gel,Active Orange Kiwi Vit-C Gel,,,"FC-HDDM-TR-030, FC-AC-OK-050","FC-HG-PA-040, FC-AC-BT-050",FC-AC-OK-050,FC-AC-OK-050,,,"Feb 28, 2024","Jul 1, 2024","Nov 21, 2024","Mar 24, 2025",,,124,143,123,,,New Delhi,2024-02,2,4,1
+28670,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Apr 25, 2026",,,,,,,,,,,Gurgaon,2026-04,4,1,0
+29105,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Sep 1, 2024",,,,,,,,,,,Gurgaon,2024-09,9,1,0
+29346,Face Malai,,,,,,"Cocoa Mogra (Overnight) Face Malai - 30g, Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g",,,,,,"FC-HDDM-FB-030, FC-DM-NR-030",,,,,,"Apr 22, 2024",,,,,,,,,,,New Delhi,2024-04,4,1,0
+29379,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 4, 2024",,,,,,,,,,,New Delhi,2024-01,1,1,0
+29483,Face Malai,Face Malai,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,FC-DM-PG-030,FC-DM-PG-030,,,,,"Jan 15, 2024","Mar 7, 2024",,,,,52,,,,,New Delhi,2024-01,1,2,1
+29860,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Sep 13, 2024",,,,,,,,,,,New Delhi,2024-09,9,1,0
+29922,Face Malai,,,,,,"Cocoa Mogra (Overnight) Face Malai - 30g, Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai",,,,,,"FC-CWDM-TP-030, FC-DM-NR-030",,,,,,"Nov 6, 2024",,,,,,,,,,,Agra,2024-11,11,1,0
+30027,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Mar 19, 2024",,,,,,,,,,,New Delhi,2024-03,3,1,0
+30256,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Aug 23, 2024",,,,,,,,,,,New Delhi,2024-08,8,1,0
+30491,Face Malai,,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 50g , Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai",,,,,,"FC-CWDM-TP-030, FC-DM-PG-050",,,,,,"Nov 10, 2025",,,,,,,,,,,New Delhi,2025-11,11,1,0
+30705,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Feb 25, 2024",,,,,,,,,,,New Delhi,2024-02,2,1,0
+31079,Face Malai,Aloe Vera Gel,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Aloe Vera Gel - 80 gms,,,,,FC-DM-PG-030,FC-HG-PA-080,,,,,"Jan 13, 2024","Mar 1, 2026",,,,,778,,,,,New Delhi,2024-01,1,2,1
+31176,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 22, 2024",,,,,,,,,,,Ghaziabad,2024-03,3,1,0
+31291,Face Malai,Active Gel,Face Malai,Active Gel,Active Gel,,Cocoa Mogra (Overnight) Face Malai - 30g,Active Orange Kiwi Vit-C Gel,Flax Walnut (Cold) 35+ Face Malai,Active Orange Kiwi Vit-C Gel,Active Orange Kiwi Vit-C Gel,,FC-DM-NR-030,FC-AC-OK-050,FC-CWDM-FW-030,FC-AC-OK-050,FC-AC-OK-050,,"Oct 6, 2024","Oct 12, 2024","Dec 8, 2024","Feb 11, 2025","Feb 6, 2026",,6,57,65,360,,Gautam Buddha Nagar,2024-10,10,5,1
+31470,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 5, 2025",,,,,,,,,,,Bengaluru,2025-02,2,1,0
+32145,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 16, 2025",,,,,,,,,,,New Delhi,2025-10,10,1,0
+32627,Face Malai,,,,,,"Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,,"FC-CWDM-TP-030, FC-DM-PG-030",,,,,,"Dec 24, 2025",,,,,,,,,,,New Delhi,2025-12,12,1,0
+32727,Face Malai,,,,,,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-HDDM-TR-030, FC-DM-NR-030",,,,,,"Oct 25, 2025",,,,,,,,,,,New Delhi,2025-10,10,1,0
+32934,Aloe Vera Gel,Aloe Vera Gel,Aloe Vera Gel,,,,Aloe Vera Gel - 80 gms,Aloe Vera Gel - 80 gms,Aloe Vera Gel - 80 gms,,,,FC-HG-PA-080,FC-HG-PA-080,FC-HG-PA-080,,,,"Jun 21, 2025","Mar 29, 2026","Jun 23, 2026",,,,281,86,,,,New Delhi,2025-06,6,3,1
+33027,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jul 10, 2025",,,,,,,,,,,New Delhi,2025-07,7,1,0
+34274,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"Jul 13, 2024",,,,,,,,,,,New Delhi,2024-07,7,1,0
+34508,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Nov 2, 2025",,,,,,,,,,,New Delhi,2025-11,11,1,0
+34893,"Active Gel, Face Malai",,,,,,"Clove Tea-Tree (Anti-Acne) Face Malai, Active Neem TeaTree Gel",,,,,,"FC-DM-AA-030, FC-AC-NT-050",,,,,,"Mar 9, 2025",,,,,,,,,,,New Delhi,2025-03,3,1,0
+35018,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,,,,,FC-HHDM-FC-050,,,,,,"May 1, 2026",,,,,,,,,,,New Delhi,2026-05,5,1,0
+35118,Active Gel,,,,,,Active Aloe Cactus Hydra Lift Gel,,,,,,FC-AC-AC-050,,,,,,"Mar 8, 2024",,,,,,,,,,,New Delhi,2024-03,3,1,0
+35132,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 10, 2024",,,,,,,,,,,New Delhi,2024-06,6,1,0
+35258,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,,FC-DM-PG-050,,,,,,"Dec 10, 2024",,,,,,,,,,,New Delhi,2024-12,12,1,0
+35277,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 10, 2025",,,,,,,,,,,Bengaluru,2025-04,4,1,0
+35510,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jun 13, 2026",,,,,,,,,,,New Delhi,2026-06,6,1,0
+37170,Face Malai,,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,,FC-DM-DP-030,,,,,,"Dec 29, 2024",,,,,,,,,,,New Delhi,2024-12,12,1,0
+38176,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Nov 30, 2024",,,,,,,,,,,New Delhi,2024-11,11,1,0
+38217,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Nov 14, 2024",,,,,,,,,,,New Delhi,2024-11,11,1,0
+39169,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"Aug 26, 2025",,,,,,,,,,,New Delhi,2025-08,8,1,0
+39271,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 23, 2024",,,,,,,,,,,New Delhi,2024-11,11,1,0
+39960,"Active Gel, Aloe Vera Gel",,,,,,"Aloe Vera Gel - 80 gms, Active Olive Vit-E Night Gel",,,,,,"FC-AC-OV-050, FC-HG-PA-080",,,,,,"Aug 4, 2025",,,,,,,,,,,New Delhi,2025-08,8,1,0
+40148,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Dec 8, 2024",,,,,,,,,,,Faizabad,2024-12,12,1,0
+40865,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Jan 2, 2025",,,,,,,,,,,New Delhi,2025-01,1,1,0
+40930,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jun 12, 2024",,,,,,,,,,,New Delhi,2024-06,6,1,0
+41008,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Dec 21, 2024",,,,,,,,,,,Gurgaon,2024-12,12,1,0
+41050,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jan 19, 2026",,,,,,,,,,,New Delhi,2026-01,1,1,0
+41079,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Nov 21, 2024",,,,,,,,,,,New Delhi,2024-11,11,1,0
+41468,Face Malai,Active Gel,Face Malai,Active Gel,Face Malai,Face Malai,GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai,Active Aloe Cactus Hydra Lift Gel,Cocoa Mogra (Overnight) Face Malai - 30g,Active Aloe Cactus Hydra Lift Gel,GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai,GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai,FC-HHDM-GAT-030,FC-AC-AC-050,FC-DM-NR-030,FC-AC-AC-050,FC-HHDM-GAT-030,FC-HHDM-GAT-030,"Mar 4, 2024","Apr 12, 2024","May 10, 2024","Jun 7, 2024","Aug 21, 2024","Nov 5, 2024",39,28,28,75,76,Ghaziabad,2024-03,3,6,1
+41564,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 9, 2026",,,,,,,,,,,New Delhi,2026-05,5,1,0
+42059,Active Gel,,,,,,Active Neem TeaTree Gel,,,,,,FC-AC-NT-050,,,,,,"May 31, 2024",,,,,,,,,,,Faridabad,2024-05,5,1,0
+42680,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"May 19, 2024",,,,,,,,,,,Dehradun,2024-05,5,1,0
+42806,Face Malai,Face Malai,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,"Cocoa Mogra (Overnight) Face Malai - 30g, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,FC-DM-PG-030,"FC-DM-PG-030, FC-DM-NR-030",,,,,"Jul 31, 2025","Aug 2, 2025",,,,,2,,,,,New Delhi,2025-07,7,2,1
+42936,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Dec 26, 2024",,,,,,,,,,,Gurgaon,2024-12,12,1,0
+43181,"Active Gel, Face Malai",,,,,,"Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g, Active Aloe Cactus Hydra Lift Gel",,,,,,"FC-AC-AC-050, FC-HDDM-FB-030",,,,,,"Feb 29, 2024",,,,,,,,,,,Gurgaon,2024-02,2,1,0
+43192,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 2, 2024",,,,,,,,,,,Gurgaon,2024-11,11,1,0
+43540,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Jan 17, 2024",,,,,,,,,,,Gurgaon,2024-01,1,1,0
+43611,Aloe Vera Gel,Aloe Vera Gel,,,,,Aloe Vera Gel - 40 gms,Aloe Vera Gel - 40 gms,,,,,FC-HG-PA-040,FC-HG-PA-040,,,,,"Apr 28, 2024","Nov 24, 2024",,,,,210,,,,,Gurgaon,2024-04,4,2,1
+43946,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 9, 2025",,,,,,,,,,,Gurgaon,2025-01,1,1,0
+43986,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 21, 2024",,,,,,,,,,,Gurgaon,2024-01,1,1,0
+44054,Face Malai,Face Malai,Face Malai,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,Flax Walnut (Cold) 35+ Face Malai,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,FC-HHDM-FC-030,FC-CWDM-FW-030,FC-HDDM-FB-030,,,,"Mar 2, 2025","Jun 30, 2025","Mar 25, 2026",,,,120,268,,,,Gurgaon,2025-03,3,3,1
+44067,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"May 30, 2024",,,,,,,,,,,Shamli,2024-05,5,1,0
+44331,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 7, 2025",,,,,,,,,,,Pune,2025-01,1,1,0
+44631,Face Malai,Aloe Vera Gel,Active Gel,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,Aloe Vera Gel - 80 gms,Active Neem TeaTree Gel,,,,FC-CWDM-TP-030,FC-HG-PA-080,FC-AC-NT-050,,,,"Nov 29, 2024","Apr 11, 2025","May 18, 2025",,,,133,37,,,,Gurgaon,2024-11,11,3,1
+44834,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Aug 2, 2024",,,,,,,,,,,Gurgaon,2024-08,8,1,0
+44859,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jul 9, 2024",,,,,,,,,,,Bengaluru,2024-07,7,1,0
+44983,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"May 12, 2026",,,,,,,,,,,Gurgaon,2026-05,5,1,0
+45145,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Sep 25, 2024",,,,,,,,,,,Gurgaon,2024-09,9,1,0
+45547,Face Malai,Face Malai,,,,,Flax Walnut (Cold) 35+ Face Malai,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,FC-CWDM-FW-030,FC-HDDM-FB-030,,,,,"Jan 24, 2024","Feb 14, 2024",,,,,21,,,,,Gurgaon,2024-01,1,2,1
+45891,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Nov 18, 2024",,,,,,,,,,,Nasik,2024-11,11,1,0
+45904,Face Malai,,,,,,"Flax Carrot (Hot Humid) 35+ Face Malai - 30g, GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai",,,,,,"FC-HHDM-GAT-030, FC-HHDM-FC-030",,,,,,"May 3, 2024",,,,,,,,,,,Gurgaon,2024-05,5,1,0
+46096,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 24, 2024",,,,,,,,,,,Gurgaon,2024-04,4,1,0
+46650,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Aug 7, 2025",,,,,,,,,,,Chandigarh,2025-08,8,1,0
+46720,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Apr 30, 2025",,,,,,,,,,,Gurgaon,2025-04,4,1,0
+48109,Aloe Vera Gel,Aloe Vera Gel,Aloe Vera Gel,Face Malai,Aloe Vera Gel,,Aloe Vera Gel - 40 gms,Aloe Vera Gel - 40 gms,Aloe Vera Gel - 40 gms,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,Aloe Vera Gel - 80 gms,,FC-HG-PA-040,FC-HG-PA-040,FC-HG-PA-040,FC-CWDM-TP-030,FC-HG-PA-080,,"Sep 29, 2024","Oct 1, 2024","Oct 1, 2024","Nov 10, 2024","Sep 24, 2025",,2,0,40,318,,Agra,2024-09,9,5,1
+48324,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 3, 2025",,,,,,,,,,,Gurgaon,2025-01,1,1,0
+48601,Aloe Vera Gel,Aloe Vera Gel,,,,,Aloe Vera Gel - 40 gms,Aloe Vera Gel - 80 gms,,,,,FC-HG-PA-040,FC-HG-PA-080,,,,,"Jan 14, 2025","Jan 12, 2026",,,,,363,,,,,Gurgaon,2025-01,1,2,1
+48781,Face Malai,Face Malai,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,FC-HHDM-TV-030,FC-HHDM-TV-030,,,,,"Apr 30, 2025","May 15, 2025",,,,,15,,,,,Secunderabad,2025-04,4,2,1
+48967,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Sep 2, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-09,9,1,0
+49294,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jul 6, 2025",,,,,,,,,,,Gwalior,2025-07,7,1,0
+49321,Face Malai,,,,,,Pomegranate Tulsi (Hot Dry) 13 - 19 Yrs Face Malai,,,,,,FC-HDDM-PT-030,,,,,,"Jun 13, 2025",,,,,,,,,,,Ghaziabad,2025-06,6,1,0
+49388,Face Malai,,,,,,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,,"FC-HDDM-TR-030, FC-DM-PG-030",,,,,,"Dec 26, 2024",,,,,,,,,,,Coimbatore,2024-12,12,1,0
+49389,Face Malai,,,,,,GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai,,,,,,FC-HHDM-GAT-030,,,,,,"Feb 28, 2024",,,,,,,,,,,Ghaziabad,2024-02,2,1,0
+49407,Face Malai,,,,,,"Honey Multi-Nut (Dry & Peeling Skin) Face Malai, Flax Carrot (Hot Humid) 35+ Face Malai - 30g",,,,,,"FC-DM-DP-030, FC-HHDM-FC-030",,,,,,"Jun 15, 2025",,,,,,,,,,,New Delhi,2025-06,6,1,0
+49419,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jul 29, 2024",,,,,,,,,,,Pali,2024-07,7,1,0
+49466,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 20, 2024",,,,,,,,,,,Bijnor,2024-05,5,1,0
+49492,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jan 8, 2025",,,,,,,,,,,Gautam Buddha Nagar,2025-01,1,1,0
+49555,Face Malai,Face Malai,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 50g,,,,,FC-DM-NR-030,FC-HDDM-TR-050,,,,,"Nov 10, 2025","Dec 8, 2025",,,,,28,,,,,Ghaziabad,2025-11,11,2,1
+49767,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Apr 2, 2025",,,,,,,,,,,Gautam Buddha Nagar,2025-04,4,1,0
+49839,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Dec 5, 2024",,,,,,,,,,,New Delhi,2024-12,12,1,0
+49978,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Jan 25, 2025",,,,,,,,,,,Thane,2025-01,1,1,0
+50327,Face Malai,Aloe Vera Gel,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Aloe Vera Gel - 40 gms,,,,,FC-DM-PG-030,FC-HG-PA-040,,,,,"Jan 14, 2024","Jun 26, 2024",,,,,164,,,,,Gautam Buddha Nagar,2024-01,1,2,1
+50765,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 50g,,,,,,FC-DM-NR-050,,,,,,"Nov 3, 2025",,,,,,,,,,,Varanasi,2025-11,11,1,0
+50816,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 40 gms, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,,"FC-HG-PA-040, FC-DM-PG-030",,,,,,"Oct 31, 2024",,,,,,,,,,,Rohtak,2024-10,10,1,0
+50883,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 19, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-01,1,1,0
+50964,Face Malai,Face Malai,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,FC-CWDM-TP-030,FC-CWDM-TP-030,,,,,"Jan 5, 2026","Mar 24, 2026",,,,,78,,,,,Meerut,2026-01,1,2,1
+54072,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Dec 29, 2025",,,,,,,,,,,New Delhi,2025-12,12,1,0
+54249,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Apr 22, 2024",,,,,,,,,,,Gurgaon,2024-04,4,1,0
+58045,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 17, 2025",,,,,,,,,,,Gurgaon,2025-02,2,1,0
+59291,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,,FC-DM-PG-050,,,,,,"Jul 6, 2025",,,,,,,,,,,Ghaziabad,2025-07,7,1,0
+61321,Active Gel,,,,,,Active Olive Vit-E Night Gel,,,,,,FC-AC-OV-050,,,,,,"Feb 3, 2024",,,,,,,,,,,Faridabad,2024-02,2,1,0
+63129,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 20, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-06,6,1,0
+63989,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 27, 2025",,,,,,,,,,,Ghaziabad,2025-10,10,1,0
+65629,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jul 4, 2024",,,,,,,,,,,Faizabad,2024-07,7,1,0
+67049,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jul 28, 2024",,,,,,,,,,,Faridabad,2024-07,7,1,0
+72189,Face Malai,Face Malai,Face Malai,Face Malai,Face Malai,,Flax Walnut (Cold) 35+ Face Malai,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,FC-CWDM-FW-030,FC-DM-PG-030,FC-DM-PG-050,FC-DM-DP-030,FC-DM-DP-030,,"Dec 1, 2024","May 18, 2025","Aug 19, 2025","Dec 8, 2025","Feb 9, 2026",,168,93,111,63,,New Delhi,2024-12,12,5,1
+73980,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Feb 10, 2024",,,,,,,,,,,NA,2024-02,2,1,0
+75723,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Nov 18, 2024",,,,,,,,,,,Gurgaon,2024-11,11,1,0
+76088,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 10, 2025",,,,,,,,,,,Faridabad,2025-10,10,1,0
+76355,"Active Gel, Face Malai",,,,,,"Honey Multi-Nut (Dry & Peeling Skin) Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g, Active Beetroot Tomato Vit-A Gel",,,,,,"FC-DM-DP-030, FC-AC-BT-050, FC-DM-NR-030",,,,,,"Mar 20, 2025",,,,,,,,,,,Hissar,2025-03,3,1,0
+77751,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 50g,,,,,,FC-DM-NR-050,,,,,,"Nov 4, 2025",,,,,,,,,,,New Delhi,2025-11,11,1,0
+79105,"Active Gel, Face Malai",,,,,,"Honey Multi-Nut (Dry & Peeling Skin) Face Malai, Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g, Cocoa Mogra (Overnight) Face Malai - 30g, Active Orange Kiwi Vit-C Gel",,,,,,"FC-DM-DP-030, FC-HDDM-FB-050, FC-DM-NR-030, FC-AC-OK-050",,,,,,"May 25, 2024",,,,,,,,,,,New Delhi,2024-05,5,1,0
+81775,Face Malai,Face Malai,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,FC-DM-NR-030,FC-DM-PG-030,,,,,"Apr 5, 2024","Apr 1, 2025",,,,,361,,,,,Gautam Buddha Nagar,2024-04,4,2,1
+86903,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Oct 24, 2025",,,,,,,,,,,Bengaluru,2025-10,10,1,0
+95286,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"May 14, 2025",,,,,,,,,,,New Delhi,2025-05,5,1,0
+95383,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jun 18, 2025",,,,,,,,,,,Thane,2025-06,6,1,0
+96335,Active Gel,,,,,,Active Olive Vit-E Night Gel,,,,,,FC-AC-OV-050,,,,,,"Mar 21, 2025",,,,,,,,,,,Jaipur,2025-03,3,1,0
+100216,Face Malai,,,,,,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-HDDM-TR-030, FC-DM-NR-030",,,,,,"Jul 3, 2026",,,,,,,,,,,Kolkata,2026-07,7,1,0
+104190,Face Malai,Face Malai,,,,,Flax Walnut (Cold) 35+ Face Malai,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,FC-CWDM-FW-030,FC-HDDM-FB-030,,,,,"Nov 18, 2025","Nov 18, 2025",,,,,0,,,,,Secunderabad,2025-11,11,2,1
+104602,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 30, 2024",,,,,,,,,,,Chennai,2024-06,6,1,0
+104671,Aloe Vera Gel,Face Malai,,,,,Aloe Vera Gel - 40 gms,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,FC-HG-PA-040,FC-HHDM-FC-030,,,,,"Oct 4, 2024","Jun 13, 2025",,,,,252,,,,,Baramati,2024-10,10,2,1
+105358,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 10, 2024",,,,,,,,,,,Sangareddy,2024-03,3,1,0
+105658,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 8, 2025",,,,,,,,,,,Thane,2025-10,10,1,0
+106037,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 11, 2024",,,,,,,,,,,Sitamarhi,2024-11,11,1,0
+106130,Aloe Vera Gel,Aloe Vera Gel,Aloe Vera Gel,Aloe Vera Gel,,,Aloe Vera Gel - 40 gms,Aloe Vera Gel - 40 gms,Aloe Vera Gel - 40 gms,Aloe Vera Gel - 80 gms,,,FC-HG-PA-040,FC-HG-PA-040,FC-HG-PA-040,FC-HG-PA-080,,,"Mar 17, 2024","Nov 20, 2024","Jan 11, 2025","Apr 28, 2025",,,248,52,107,,,Jaipur,2024-03,3,4,1
+106499,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 6, 2024",,,,,,,,,,,Bengaluru,2024-01,1,1,0
+106609,Face Malai,,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,,FC-DM-DP-030,,,,,,"Oct 28, 2025",,,,,,,,,,,Jaipur,2025-10,10,1,0
+106715,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 23, 2024",,,,,,,,,,,New Delhi,2024-05,5,1,0
+106993,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 6, 2024",,,,,,,,,,,Bengaluru,2024-01,1,1,0
+107088,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Jun 1, 2024",,,,,,,,,,,Pune,2024-06,6,1,0
+107268,Active Gel,Face Malai,Aloe Vera Gel,,,,"Active Beetroot Tomato Vit-A Gel, Active Orange Kiwi Vit-C Gel",Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,Aloe Vera Gel - 80 gms,,,,"FC-AC-BT-050, FC-AC-OK-050",FC-HDDM-FB-030,FC-HG-PA-080,,,,"Jan 12, 2025","Feb 9, 2025","Feb 16, 2025",,,,28,7,,,,Bengaluru,2025-01,1,3,1
+107289,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 80 gms, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-HG-PA-080, FC-DM-NR-030",,,,,,"May 16, 2026",,,,,,,,,,,Karnal,2026-05,5,1,0
+107313,Active Gel,,,,,,"Active Neem TeaTree Gel, Active Orange Kiwi Vit-C Gel",,,,,,"FC-AC-NT-050, FC-AC-OK-050",,,,,,"May 6, 2025",,,,,,,,,,,Chennai,2025-05,5,1,0
+107924,Active Gel,,,,,,Active Beetroot Tomato Vit-A Gel,,,,,,FC-AC-BT-050,,,,,,"Jun 29, 2025",,,,,,,,,,,Hyderabad,2025-06,6,1,0
+108178,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 8, 2024",,,,,,,,,,,Kolkata,2024-01,1,1,0
+108199,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 1, 2024",,,,,,,,,,,Ghaziabad,2024-06,6,1,0
+108688,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 14, 2024",,,,,,,,,,,Jaipur,2024-04,4,1,0
+108843,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,,,,,FC-HHDM-FC-050,,,,,,"Jul 31, 2024",,,,,,,,,,,Mumbai,2024-07,7,1,0
+109401,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 80 gms, Flax Carrot (Hot Humid) 35+ Face Malai - 50g",,,,,,"FC-HHDM-FC-050, FC-HG-PA-080",,,,,,"Jun 15, 2025",,,,,,,,,,,Jaipur,2025-06,6,1,0
+109510,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Apr 9, 2024",,,,,,,,,,,Pune,2024-04,4,1,0
+109534,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,,,,,FC-HHDM-FC-050,,,,,,"May 5, 2025",,,,,,,,,,,Chennai,2025-05,5,1,0
+109845,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Jan 7, 2025",,,,,,,,,,,Ahmedabad,2025-01,1,1,0
+110127,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Dec 10, 2024",,,,,,,,,,,Singhbhum,2024-12,12,1,0
+111397,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Aug 1, 2024",,,,,,,,,,,New Delhi,2024-08,8,1,0
+111534,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Mar 12, 2025",,,,,,,,,,,Bengaluru,2025-03,3,1,0
+111607,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Jul 14, 2024",,,,,,,,,,,Ahmedabad,2024-07,7,1,0
+112093,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 7, 2025",,,,,,,,,,,Bhubaneswar,2025-01,1,1,0
+112134,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jul 5, 2024",,,,,,,,,,,Pune,2024-07,7,1,0
+112462,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 20, 2024",,,,,,,,,,,Secunderabad,2024-05,5,1,0
+112815,Face Malai,,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,,FC-DM-DP-030,,,,,,"Apr 2, 2026",,,,,,,,,,,Varanasi,2026-04,4,1,0
+113127,Face Malai,,,,,,"Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-HHDM-TV-030, FC-DM-NR-030",,,,,,"Sep 12, 2024",,,,,,,,,,,Gurgaon,2024-09,9,1,0
+113339,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 9, 2025",,,,,,,,,,,Secunderabad,2025-10,10,1,0
+113360,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 16, 2024",,,,,,,,,,,New Delhi,2024-11,11,1,0
+113472,Aloe Vera Gel,Face Malai,,,,,Aloe Vera Gel - 40 gms,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,FC-HG-PA-040,FC-DM-AA-030,,,,,"Feb 6, 2024","May 8, 2024",,,,,92,,,,,Faridabad,2024-02,2,2,1
+113924,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Mar 9, 2025",,,,,,,,,,,Mumbai,2025-03,3,1,0
+114043,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 14, 2025",,,,,,,,,,,Hyderabad,2025-10,10,1,0
+114620,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Sep 28, 2024",,,,,,,,,,,Gurgaon,2024-09,9,1,0
+114997,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-DM-NR-030",,,,,,"Nov 11, 2024",,,,,,,,,,,Jaipur,2024-11,11,1,0
+115588,Face Malai,,,,,,Pomegranate Tulsi (Hot Dry) 13 - 19 Yrs Face Malai,,,,,,FC-HDDM-PT-030,,,,,,"Jul 23, 2025",,,,,,,,,,,Pune,2025-07,7,1,0
+115632,Face Malai,,,,,,"Clove Tea-Tree (Anti-Acne) Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,,"FC-DM-AA-030, FC-DM-PG-030, FC-DM-NR-030",,,,,,"Mar 31, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-03,3,1,0
+116569,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Dec 14, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-12,12,1,0
+116678,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Jan 31, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-01,1,1,0
+116973,Face Malai,,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,,FC-DM-DP-030,,,,,,"Jan 10, 2024",,,,,,,,,,,New Delhi,2024-01,1,1,0
+117128,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Apr 9, 2025",,,,,,,,,,,Bengaluru,2025-04,4,1,0
+117323,"Active Gel, Face Malai",,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 30g, Active Beetroot Tomato Vit-A Gel",,,,,,"FC-AC-BT-050, FC-DM-PG-030",,,,,,"Feb 20, 2025",,,,,,,,,,,Gurgaon,2025-02,2,1,0
+118480,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Dec 17, 2024",,,,,,,,,,,Thane,2024-12,12,1,0
+118753,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Feb 29, 2024",,,,,,,,,,,Barasat,2024-02,2,1,0
+119158,"Active Gel, Face Malai",,,,,,"Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g, Active Orange Kiwi Vit-C Gel",,,,,,"FC-HDDM-FB-050, FC-AC-OK-050",,,,,,"Oct 11, 2024",,,,,,,,,,,Chandigarh,2024-10,10,1,0
+119962,Face Malai,,,,,,"Clove Tea-Tree (Anti-Acne) Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-DM-AA-030, FC-DM-NR-030",,,,,,"Nov 20, 2024",,,,,,,,,,,Pune,2024-11,11,1,0
+120209,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 80 gms, Flax Walnut (Cold) 35+ Face Malai",,,,,,"FC-CWDM-FW-030, FC-HG-PA-080",,,,,,"Jan 22, 2025",,,,,,,,,,,Gurgaon,2025-01,1,1,0
+120346,Aloe Vera Gel,"Active Gel, Aloe Vera Gel",,,,,Aloe Vera Gel - 40 gms,"Aloe Vera Gel - 40 gms, Active Aloe Cactus Hydra Lift Gel, Active Olive Vit-E Night Gel",,,,,FC-HG-PA-040,"FC-AC-AC-050, FC-HG-PA-040, FC-AC-OV-050",,,,,"Dec 6, 2024","Dec 13, 2024",,,,,7,,,,,Ahmedabad,2024-12,12,2,1
+121567,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 20, 2024",,,,,,,,,,,Sambalpur,2024-11,11,1,0
+122019,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Nov 27, 2025",,,,,,,,,,,Moradabad,2025-11,11,1,0
+122240,Face Malai,,,,,,Pomegranate Tulsi (Hot Dry) 13 - 19 Yrs Face Malai,,,,,,FC-HDDM-PT-030,,,,,,"Mar 2, 2024",,,,,,,,,,,Mumbai,2024-03,3,1,0
+122448,"Active Gel, Face Malai",,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 30g, Active Orange Kiwi Vit-C Gel",,,,,,"FC-DM-PG-030, FC-AC-OK-050",,,,,,"Mar 9, 2025",,,,,,,,,,,Mumbai,2025-03,3,1,0
+122971,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Jan 18, 2024",,,,,,,,,,,Pune,2024-01,1,1,0
+123229,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 40 gms, Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g",,,,,,"FC-HG-PA-040, FC-HDDM-TR-030",,,,,,"Mar 7, 2024",,,,,,,,,,,Chikodi,2024-03,3,1,0
+123508,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Jan 4, 2024",,,,,,,,,,,Bengaluru,2024-01,1,1,0
+123827,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 18, 2024",,,,,,,,,,,Bengaluru,2024-03,3,1,0
+124239,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 28, 2024",,,,,,,,,,,Bengaluru,2024-02,2,1,0
+124380,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Mar 16, 2024",,,,,,,,,,,Gurgaon,2024-03,3,1,0
+125254,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jul 5, 2026",,,,,,,,,,,Gurgaon,2026-07,7,1,0
+125572,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 12, 2025",,,,,,,,,,,Pune,2025-04,4,1,0
+126012,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Feb 4, 2026",,,,,,,,,,,Gautam Buddha Nagar,2026-02,2,1,0
+126023,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Aug 5, 2025",,,,,,,,,,,Mumbai,2025-08,8,1,0
+126309,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Sep 28, 2025",,,,,,,,,,,Ghaziabad,2025-09,9,1,0
+126755,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Mar 2, 2025",,,,,,,,,,,Mumbai,2025-03,3,1,0
+126760,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 17, 2026",,,,,,,,,,,Bengaluru,2026-02,2,1,0
+126914,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Jan 4, 2025",,,,,,,,,,,Goa,2025-01,1,1,0
+127174,Face Malai,,,,,,"Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai, Flax Carrot (Hot Humid) 35+ Face Malai - 50g, GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai",,,,,,"FC-HHDM-GAT-030, FC-HHDM-TV-030, FC-HHDM-FC-050",,,,,,"Jun 22, 2025",,,,,,,,,,,Thane,2025-06,6,1,0
+127179,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jan 16, 2025",,,,,,,,,,,Ajmer,2025-01,1,1,0
+127381,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g,,,,,,FC-HDDM-FB-050,,,,,,"Apr 6, 2026",,,,,,,,,,,Gautam Buddha Nagar,2026-04,4,1,0
+127831,Face Malai,Aloe Vera Gel,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,Aloe Vera Gel - 80 gms,,,,,FC-DM-NR-030,FC-HG-PA-080,,,,,"Jul 17, 2024","Aug 8, 2025",,,,,387,,,,,Mahesana,2024-07,7,2,1
+129271,Face Malai,Face Malai,"Aloe Vera Gel, Face Malai",Face Malai,"Active Gel, Face Malai",,Flax Walnut (Cold) 35+ Face Malai,Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai,"Aloe Vera Gel - 40 gms, Flax Walnut (Cold) 35+ Face Malai",Flax Carrot (Hot Humid) 35+ Face Malai - 50g,"Flax Carrot (Hot Humid) 35+ Face Malai - 50g, Active Aloe Cactus Hydra Lift Gel",,FC-CWDM-FW-030,FC-CWDM-BT-030,"FC-CWDM-FW-030, FC-HG-PA-040",FC-HHDM-FC-050,"FC-AC-AC-050, FC-HHDM-FC-050",,"Nov 15, 2024","Nov 21, 2024","Jan 5, 2025","Feb 16, 2025","Apr 10, 2025",,6,45,42,53,,Mumbai,2024-11,11,5,1
+130125,"Active Gel, Face Malai",,,,,,"Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g, Active Orange Kiwi Vit-C Gel",,,,,,"FC-HDDM-FB-050, FC-AC-OK-050",,,,,,"Oct 13, 2024",,,,,,,,,,,Pune,2024-10,10,1,0
+130418,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jul 30, 2024",,,,,,,,,,,Jaipur,2024-07,7,1,0
+131157,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Sep 18, 2024",,,,,,,,,,,Barasat,2024-09,9,1,0
+131375,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Oct 23, 2024",,,,,,,,,,,Chennai,2024-10,10,1,0
+131465,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 40 gms, Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g",,,,,,"FC-HG-PA-040, FC-HDDM-FB-030",,,,,,"Oct 27, 2024",,,,,,,,,,,Pune,2024-10,10,1,0
+131634,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Dec 25, 2024",,,,,,,,,,,Mandya,2024-12,12,1,0
+131722,Face Malai,Active Gel,Face Malai,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,Active Orange Kiwi Vit-C Gel,Flax Walnut (Cold) 35+ Face Malai,,,,FC-HDDM-FB-030,FC-AC-OK-050,FC-CWDM-FW-030,,,,"Apr 13, 2024","Jul 2, 2024","Jan 19, 2025",,,,80,201,,,,New Delhi,2024-04,4,3,1
+131780,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Apr 25, 2024",,,,,,,,,,,Mumbai,2024-04,4,1,0
+131968,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Dec 1, 2024",,,,,,,,,,,Chandigarh,2024-12,12,1,0
+131982,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Dec 26, 2024",,,,,,,,,,,Bengaluru,2024-12,12,1,0
+132049,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai - 50g,,,,,,FC-HHDM-TV-050,,,,,,"Apr 30, 2026",,,,,,,,,,,Nanded,2026-04,4,1,0
+132062,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 25, 2024",,,,,,,,,,,NA,2024-03,3,1,0
+132277,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 20, 2024",,,,,,,,,,,Mumbai,2024-05,5,1,0
+132454,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 6, 2025",,,,,,,,,,,Surat,2025-05,5,1,0
+132615,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 24, 2024",,,,,,,,,,,Hyderabad,2024-01,1,1,0
+133448,Face Malai,Face Malai,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,"Flax Carrot (Hot Humid) 35+ Face Malai - 50g, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,FC-HHDM-FC-030,"FC-HHDM-FC-050, FC-DM-NR-030",,,,,"May 28, 2024","Jul 13, 2024",,,,,46,,,,,Ahmedabad,2024-05,5,2,1
+133922,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 20, 2024",,,,,,,,,,,Pune,2024-02,2,1,0
+134167,Face Malai,,,,,,GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai,,,,,,FC-HHDM-GAT-030,,,,,,"May 20, 2024",,,,,,,,,,,Kalaburagi,2024-05,5,1,0
+134448,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Aug 1, 2024",,,,,,,,,,,Chennai,2024-08,8,1,0
+134805,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Jun 21, 2025",,,,,,,,,,,Baruipur,2025-06,6,1,0
+135120,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 18, 2024",,,,,,,,,,,New Delhi,2024-03,3,1,0
+135144,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 23, 2024",,,,,,,,,,,Barrackpore,2024-11,11,1,0
+135377,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 27, 2024",,,,,,,,,,,Hyderabad,2024-02,2,1,0
+136796,Face Malai,,,,,,GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai,,,,,,FC-HHDM-GAT-030,,,,,,"Nov 5, 2025",,,,,,,,,,,Pune,2025-11,11,1,0
+137078,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 8, 2024",,,,,,,,,,,Anantapur,2024-04,4,1,0
+137891,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jul 27, 2024",,,,,,,,,,,Bengaluru,2024-07,7,1,0
+138146,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Oct 12, 2024",,,,,,,,,,,Jaipur,2024-10,10,1,0
+138345,Face Malai,,,,,,"Honey Multi-Nut (Dry & Peeling Skin) Face Malai, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,,"FC-DM-DP-030, FC-DM-PG-030",,,,,,"Dec 27, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-12,12,1,0
+140736,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"Apr 18, 2025",,,,,,,,,,,Vadodara,2025-04,4,1,0
+140841,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-DM-NR-030",,,,,,"Jan 10, 2025",,,,,,,,,,,Hyderabad,2025-01,1,1,0
+140868,Face Malai,,,,,,"Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai, Flax Carrot (Hot Humid) 35+ Face Malai - 50g",,,,,,"FC-HHDM-TV-030, FC-HHDM-FC-050",,,,,,"Jun 21, 2025",,,,,,,,,,,Nagaon,2025-06,6,1,0
+141029,Active Gel,Face Malai,Active Gel,Face Malai,Active Gel,Active Gel,Active Neem TeaTree Gel,Clove Tea-Tree (Anti-Acne) Face Malai,Active Neem TeaTree Gel,Clove Tea-Tree (Anti-Acne) Face Malai,Active Neem TeaTree Gel,Active Neem TeaTree Gel,FC-AC-NT-050,FC-DM-AA-030,FC-AC-NT-050,FC-DM-AA-030,FC-AC-NT-050,FC-AC-NT-050,"Jan 1, 2024","Feb 13, 2024","Apr 14, 2024","Apr 15, 2024","Jul 28, 2024","Sep 2, 2024",43,61,1,104,36,Pali,2024-01,1,6,1
+141911,Face Malai,Face Malai,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,FC-DM-AA-030,FC-DM-AA-030,,,,,"Jan 6, 2024","Feb 8, 2024",,,,,33,,,,,Kolkata,2024-01,1,2,1
+142020,Face Malai,Aloe Vera Gel,,,,,"Flax Carrot (Hot Humid) 35+ Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",Aloe Vera Gel - 40 gms,,,,,"FC-DM-NR-030, FC-HHDM-FC-030",FC-HG-PA-040,,,,,"May 28, 2024","Jul 25, 2024",,,,,58,,,,,Bengaluru,2024-05,5,2,1
+142041,Face Malai,Active Gel,Face Malai,Face Malai,Active Gel,,"Cocoa Mogra (Overnight) Face Malai - 30g, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",Active Orange Kiwi Vit-C Gel,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Active Beetroot Tomato Vit-A Gel,,"FC-DM-PG-030, FC-DM-NR-030",FC-AC-OK-050,FC-DM-PG-030,FC-DM-PG-030,FC-AC-BT-050,,"Jan 20, 2025","May 28, 2025","Jun 14, 2025","Dec 1, 2025","May 6, 2026",,128,17,170,156,,Gurgaon,2025-01,1,5,1
+143237,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 25, 2024",,,,,,,,,,,Hyderabad,2024-02,2,1,0
+143277,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jan 17, 2025",,,,,,,,,,,Bidar,2025-01,1,1,0
+143282,Face Malai,,,,,,"Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g, Flax Carrot (Hot Humid) 35+ Face Malai - 50g",,,,,,"FC-HDDM-FB-050, FC-HHDM-FC-050",,,,,,"Aug 13, 2025",,,,,,,,,,,Jaipur,2025-08,8,1,0
+143364,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jan 16, 2024",,,,,,,,,,,Hyderabad,2024-01,1,1,0
+144152,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Jan 12, 2024",,,,,,,,,,,New Delhi,2024-01,1,1,0
+144606,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 29, 2024",,,,,,,,,,,Baruipur,2024-06,6,1,0
+145165,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Aug 2, 2025",,,,,,,,,,,Jaipur,2025-08,8,1,0
+145169,"Active Gel, Aloe Vera Gel, Face Malai",Face Malai,,,,,"Aloe Vera Gel - 40 gms, Active Orange Kiwi Vit-C Gel, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,"FC-HG-PA-040, FC-DM-PG-030, FC-AC-OK-050",FC-HHDM-TV-030,,,,,"May 5, 2024","Aug 20, 2024",,,,,107,,,,,Chengalpattu,2024-05,5,2,1
+145586,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 5, 2024",,,,,,,,,,,Ahmedabad,2024-03,3,1,0
+145659,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 27, 2025",,,,,,,,,,,Bengaluru,2025-01,1,1,0
+145727,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Aug 6, 2024",,,,,,,,,,,Tambaram,2024-08,8,1,0
+146492,Active Gel,,,,,,Active Neem TeaTree Gel,,,,,,FC-AC-NT-050,,,,,,"Apr 23, 2024",,,,,,,,,,,New Delhi,2024-04,4,1,0
+147054,"Active Gel, Face Malai","Active Gel, Face Malai",Active Gel,,,,"Active Orange Kiwi Vit-C Gel, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g","Clove Tea-Tree (Anti-Acne) Face Malai, Active Beetroot Tomato Vit-A Gel",Active Neem TeaTree Gel,,,,"FC-DM-PG-030, FC-AC-OK-050","FC-DM-AA-030, FC-AC-BT-050",FC-AC-NT-050,,,,"Mar 31, 2024","Sep 6, 2024","Jan 3, 2025",,,,159,119,,,,Palghar,2024-03,3,3,1
+147435,"Active Gel, Face Malai",,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 30g, Active Orange Kiwi Vit-C Gel",,,,,,"FC-DM-PG-030, FC-AC-OK-050",,,,,,"Jun 16, 2024",,,,,,,,,,,Mumbai,2024-06,6,1,0
+147899,"Active Gel, Aloe Vera Gel",Active Gel,Face Malai,,,,"Aloe Vera Gel - 40 gms, Active Olive Vit-E Night Gel",Active Olive Vit-E Night Gel,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,,,"FC-HG-PA-040, FC-AC-OV-050",FC-AC-OV-050,FC-HHDM-FC-050,,,,"Apr 11, 2024","May 2, 2025","Jun 11, 2025",,,,386,40,,,,Goa,2024-04,4,3,1
+148201,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Dec 20, 2024",,,,,,,,,,,Mumbai,2024-12,12,1,0
+148226,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Dec 2, 2024",,,,,,,,,,,New Delhi,2024-12,12,1,0
+148298,Face Malai,Face Malai,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,FC-DM-PG-030,FC-DM-PG-030,,,,,"May 22, 2025","Mar 19, 2026",,,,,301,,,,,Mumbai,2025-05,5,2,1
+148996,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 9, 2024",,,,,,,,,,,Hyderabad,2024-02,2,1,0
+149356,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jul 30, 2025",,,,,,,,,,,Mumbai,2025-07,7,1,0
+149362,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"Apr 1, 2025",,,,,,,,,,,Mumbai,2025-04,4,1,0
+149889,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Dec 15, 2025",,,,,,,,,,,NA,2025-12,12,1,0
+150850,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 18, 2024",,,,,,,,,,,Bengaluru,2024-03,3,1,0
+151435,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Oct 13, 2024",,,,,,,,,,,Visakhapatnam,2024-10,10,1,0
+152290,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Mar 18, 2025",,,,,,,,,,,Nainital,2025-03,3,1,0
+153737,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jul 4, 2026",,,,,,,,,,,Mumbai,2026-07,7,1,0
+154446,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Oct 25, 2024",,,,,,,,,,,NA,2024-10,10,1,0
+154588,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Mar 7, 2024",,,,,,,,,,,Pune,2024-03,3,1,0
+154707,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Mar 17, 2025",,,,,,,,,,,New Delhi,2025-03,3,1,0
+155007,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 21, 2024",,,,,,,,,,,Hyderabad,2024-06,6,1,0
+155727,Face Malai,Face Malai,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,FC-HDDM-FB-030,FC-HHDM-FC-030,,,,,"Apr 12, 2025","May 13, 2025",,,,,31,,,,,New Delhi,2025-04,4,2,1
+155854,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Jun 9, 2025",,,,,,,,,,,Jaipur,2025-06,6,1,0
+155937,Aloe Vera Gel,Active Gel,,,,,Aloe Vera Gel - 40 gms,Active Beetroot Tomato Vit-A Gel,,,,,FC-HG-PA-040,FC-AC-BT-050,,,,,"Dec 20, 2024","Dec 24, 2024",,,,,4,,,,,Mumbai,2024-12,12,2,1
+156448,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Apr 18, 2024",,,,,,,,,,,Gurgaon,2024-04,4,1,0
+156533,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jul 16, 2024",,,,,,,,,,,Bengaluru,2024-07,7,1,0
+156692,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Mar 10, 2026",,,,,,,,,,,Bengaluru,2026-03,3,1,0
+156821,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 13, 2024",,,,,,,,,,,Mumbai,2024-01,1,1,0
+157387,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 18, 2024",,,,,,,,,,,Bengaluru,2024-04,4,1,0
+157530,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Apr 5, 2024",,,,,,,,,,,Gurgaon,2024-04,4,1,0
+157592,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 18, 2026",,,,,,,,,,,Bengaluru,2026-05,5,1,0
+158127,Active Gel,,,,,,Active Aloe Cactus Hydra Lift Gel,,,,,,FC-AC-AC-050,,,,,,"Apr 15, 2024",,,,,,,,,,,Mumbai,2024-04,4,1,0
+158498,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 1, 2024",,,,,,,,,,,Dehradun,2024-03,3,1,0
+158859,Face Malai,Active Gel,Face Malai,Face Malai,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,"Active Aloe Cactus Hydra Lift Gel, Active Olive Vit-E Night Gel",Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 50g,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",,,FC-HDDM-TR-030,"FC-AC-AC-050, FC-AC-OV-050",FC-HDDM-TR-050,"FC-HDDM-TR-030, FC-DM-NR-030",,,"Mar 4, 2025","Jun 26, 2025","Jan 26, 2026","May 6, 2026",,,114,214,100,,,Bengaluru,2025-03,3,4,1
+159229,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jul 1, 2026",,,,,,,,,,,Nainital,2026-07,7,1,0
+159294,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,,FC-DM-PG-050,,,,,,"Jul 22, 2024",,,,,,,,,,,Mumbai,2024-07,7,1,0
+160153,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 29, 2025",,,,,,,,,,,Secunderabad,2025-10,10,1,0
+160741,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Aug 18, 2025",,,,,,,,,,,Bengaluru,2025-08,8,1,0
+162095,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 24, 2026",,,,,,,,,,,Mumbai,2026-02,2,1,0
+162259,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Dec 3, 2024",,,,,,,,,,,Kolkata,2024-12,12,1,0
+162323,Face Malai,,,,,,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g, Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g",,,,,,"FC-HDDM-FB-030, FC-HDDM-TR-030, FC-DM-NR-030",,,,,,"Sep 21, 2025",,,,,,,,,,,Gandhinagar,2025-09,9,1,0
+163073,Face Malai,Face Malai,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,FC-DM-DP-030,FC-DM-DP-030,,,,,"Dec 30, 2025","Jan 3, 2026",,,,,4,,,,,Hyderabad,2025-12,12,2,1
+163421,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Oct 27, 2024",,,,,,,,,,,Gurgaon,2024-10,10,1,0
+163585,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jul 27, 2025",,,,,,,,,,,Tambaram,2025-07,7,1,0
+163722,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 80 gms, Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g",,,,,,"FC-HDDM-FB-050, FC-HG-PA-080",,,,,,"Mar 28, 2026",,,,,,,,,,,Gurgaon,2026-03,3,1,0
+164043,Face Malai,,,,,,GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai,,,,,,FC-HHDM-GAT-030,,,,,,"Jan 7, 2024",,,,,,,,,,,Saharanpur,2024-01,1,1,0
+164500,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g,,,,,,FC-HDDM-FB-050,,,,,,"Mar 7, 2025",,,,,,,,,,,Gurgaon,2025-03,3,1,0
+164628,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 50g,,,,,,FC-DM-NR-050,,,,,,"Jul 31, 2024",,,,,,,,,,,Rewa,2024-07,7,1,0
+164713,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 8, 2025",,,,,,,,,,,Pune,2025-05,5,1,0
+164888,Active Gel,Active Gel,,,,,Active Beetroot Tomato Vit-A Gel,Active Orange Kiwi Vit-C Gel,,,,,FC-AC-BT-050,FC-AC-OK-050,,,,,"Feb 21, 2026","May 7, 2026",,,,,75,,,,,Bengaluru,2026-02,2,2,1
+164982,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Dec 19, 2024",,,,,,,,,,,Ghaziabad,2024-12,12,1,0
+165060,"Active Gel, Face Malai",,,,,,"Clove Tea-Tree (Anti-Acne) Face Malai, Active Neem TeaTree Gel",,,,,,"FC-DM-AA-030, FC-AC-NT-050",,,,,,"May 21, 2024",,,,,,,,,,,Hyderabad,2024-05,5,1,0
+165192,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Oct 10, 2024",,,,,,,,,,,New Delhi,2024-10,10,1,0
+165942,Face Malai,Face Malai,Active Gel,Active Gel,,,Cocoa Mogra (Overnight) Face Malai - 30g,Cocoa Mogra (Overnight) Face Malai - 30g,Active Orange Kiwi Vit-C Gel,Active Orange Kiwi Vit-C Gel,,,FC-DM-NR-030,FC-DM-NR-030,FC-AC-OK-050,FC-AC-OK-050,,,"Jul 14, 2024","Jul 22, 2024","Apr 18, 2025","Jul 3, 2026",,,8,270,441,,,Palghar,2024-07,7,4,1
+166505,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,,FC-DM-PG-050,,,,,,"Jun 11, 2024",,,,,,,,,,,Surguja,2024-06,6,1,0
+166695,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 40 gms, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-HG-PA-040, FC-DM-NR-030",,,,,,"Jul 6, 2024",,,,,,,,,,,Quilon,2024-07,7,1,0
+166939,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Jan 2, 2024",,,,,,,,,,,Chennai,2024-01,1,1,0
+167311,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 14, 2024",,,,,,,,,,,Tambaram,2024-05,5,1,0
+167395,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jan 14, 2024",,,,,,,,,,,Thane,2024-01,1,1,0
+167517,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"Mar 10, 2024",,,,,,,,,,,Indore,2024-03,3,1,0
+167697,Face Malai,,,,,,Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai,,,,,,FC-CWDM-BT-030,,,,,,"Feb 18, 2024",,,,,,,,,,,Bengaluru,2024-02,2,1,0
+167811,Face Malai,,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 50g , Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 50g",,,,,,"FC-DM-PG-050, FC-HDDM-TR-050",,,,,,"May 11, 2026",,,,,,,,,,,Patna,2026-05,5,1,0
+168069,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 10, 2025",,,,,,,,,,,Thane,2025-04,4,1,0
+169200,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 23, 2024",,,,,,,,,,,Gurgaon,2024-01,1,1,0
+169259,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 5, 2024",,,,,,,,,,,Saharanpur,2024-02,2,1,0
+169270,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Mar 25, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-03,3,1,0
+169476,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Jun 6, 2024",,,,,,,,,,,Ahmedabad,2024-06,6,1,0
+169843,Aloe Vera Gel,Aloe Vera Gel,,,,,Aloe Vera Gel - 40 gms,Aloe Vera Gel - 80 gms,,,,,FC-HG-PA-040,FC-HG-PA-080,,,,,"May 4, 2024","Aug 19, 2025",,,,,472,,,,,Alwaye,2024-05,5,2,1
+170196,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 29, 2024",,,,,,,,,,,Thane,2024-03,3,1,0
+170217,"Active Gel, Aloe Vera Gel",,,,,,"Aloe Vera Gel - 40 gms, Active Olive Vit-E Night Gel",,,,,,"FC-HG-PA-040, FC-AC-OV-050",,,,,,"Sep 27, 2024",,,,,,,,,,,Khandwa,2024-09,9,1,0
+170666,Active Gel,,,,,,"Active Neem TeaTree Gel, Active Beetroot Tomato Vit-A Gel",,,,,,"FC-AC-BT-050, FC-AC-NT-050",,,,,,"Aug 14, 2024",,,,,,,,,,,Ernakulam,2024-08,8,1,0
+170689,Face Malai,,,,,,"Pomegranate Tulsi (Hot Dry) 13 - 19 Yrs Face Malai, GreenApple Tulsi (Hot Humid) 13 - 19 Yrs Face Malai",,,,,,"FC-HDDM-PT-030, FC-HHDM-GAT-030",,,,,,"Apr 28, 2025",,,,,,,,,,,Gautam Buddha Nagar,2025-04,4,1,0
+171192,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"May 31, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-05,5,1,0
+171353,Active Gel,Face Malai,,,,,Active Neem TeaTree Gel,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,FC-AC-NT-050,FC-CWDM-TP-030,,,,,"May 21, 2025","Oct 29, 2025",,,,,161,,,,,Gautam Buddha Nagar,2025-05,5,2,1
+172313,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Aug 13, 2025",,,,,,,,,,,Goa,2025-08,8,1,0
+172467,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,,,,,FC-HHDM-FC-050,,,,,,"Jul 15, 2024",,,,,,,,,,,Kolkata,2024-07,7,1,0
+173036,Active Gel,Face Malai,,,,,Active Beetroot Tomato Vit-A Gel,Cocoa Mogra (Overnight) Face Malai - 50g,,,,,FC-AC-BT-050,FC-DM-NR-050,,,,,"Jul 27, 2024","Oct 8, 2024",,,,,73,,,,,Koraput,2024-07,7,2,1
+173346,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Nov 17, 2024",,,,,,,,,,,Mumbai,2024-11,11,1,0
+173695,Face Malai,Face Malai,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,FC-HHDM-TV-030,FC-DM-NR-030,,,,,"Sep 9, 2024","Sep 15, 2024",,,,,6,,,,,Tirupattur,2024-09,9,2,1
+174011,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 4, 2025",,,,,,,,,,,Surat,2025-10,10,1,0
+174500,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Jun 17, 2025",,,,,,,,,,,Guwahati,2025-06,6,1,0
+174645,Face Malai,Face Malai,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,FC-DM-PG-050,FC-HDDM-TR-030,,,,,"Jun 27, 2024","May 30, 2025",,,,,337,,,,,Mumbai,2024-06,6,2,1
+174841,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Dec 6, 2025",,,,,,,,,,,Mumbai,2025-12,12,1,0
+174993,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 10, 2024",,,,,,,,,,,Bengaluru,2024-04,4,1,0
+175920,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 17, 2026",,,,,,,,,,,Kolkata,2026-02,2,1,0
+176028,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Mar 22, 2025",,,,,,,,,,,Satara,2025-03,3,1,0
+176195,Face Malai,Face Malai,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai - 50g,,,,,FC-DM-DP-030,FC-HHDM-TV-050,,,,,"Nov 10, 2025","Apr 20, 2026",,,,,161,,,,,Nagpur,2025-11,11,2,1
+176221,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jul 27, 2024",,,,,,,,,,,Pune,2024-07,7,1,0
+176558,Aloe Vera Gel,Aloe Vera Gel,,,,,Aloe Vera Gel - 80 gms,Aloe Vera Gel - 80 gms,,,,,FC-HG-PA-080,FC-HG-PA-080,,,,,"Feb 25, 2025","Mar 13, 2025",,,,,16,,,,,New Delhi,2025-02,2,2,1
+176581,Face Malai,,,,,,"Flax Carrot (Hot Humid) 35+ Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-DM-NR-030, FC-HHDM-FC-030",,,,,,"Oct 28, 2024",,,,,,,,,,,Mumbai,2024-10,10,1,0
+177302,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Feb 6, 2024",,,,,,,,,,,Goa,2024-02,2,1,0
+178002,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 2, 2024",,,,,,,,,,,Guwahati,2024-01,1,1,0
+178056,Active Gel,,,,,,Active Aloe Cactus Hydra Lift Gel,,,,,,FC-AC-AC-050,,,,,,"Dec 14, 2024",,,,,,,,,,,Belagavi,2024-12,12,1,0
+178246,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 17, 2024",,,,,,,,,,,Bengaluru,2024-03,3,1,0
+178396,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 50g,,,,,,FC-DM-NR-050,,,,,,"Jun 5, 2024",,,,,,,,,,,Hyderabad,2024-06,6,1,0
+178416,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 12, 2024",,,,,,,,,,,Agra,2024-02,2,1,0
+178578,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Apr 10, 2025",,,,,,,,,,,Ghaziabad,2025-04,4,1,0
+179786,"Active Gel, Face Malai",,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 30g, Active Orange Kiwi Vit-C Gel",,,,,,"FC-DM-PG-030, FC-AC-OK-050",,,,,,"May 9, 2025",,,,,,,,,,,Mumbai,2025-05,5,1,0
+179822,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai - 50g,,,,,,FC-HHDM-TV-050,,,,,,"Mar 5, 2026",,,,,,,,,,,Jaipur,2026-03,3,1,0
+180183,Aloe Vera Gel,Face Malai,,,,,Aloe Vera Gel - 40 gms,Cocoa Mogra (Overnight) Face Malai - 50g,,,,,FC-HG-PA-040,FC-DM-NR-050,,,,,"Apr 2, 2024","Mar 5, 2025",,,,,337,,,,,Chennai,2024-04,4,2,1
+180827,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Mar 31, 2024",,,,,,,,,,,Pune,2024-03,3,1,0
+181133,"Active Gel, Face Malai",,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 30g, Active Olive Vit-E Night Gel",,,,,,"FC-AC-OV-050, FC-DM-PG-030",,,,,,"Dec 21, 2024",,,,,,,,,,,Ludhiana,2024-12,12,1,0
+181208,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 4, 2024",,,,,,,,,,,Etah,2024-06,6,1,0
+181449,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jan 28, 2025",,,,,,,,,,,Gautam Buddha Nagar,2025-01,1,1,0
+181662,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Sep 9, 2024",,,,,,,,,,,Mysuru,2024-09,9,1,0
+181724,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Mar 9, 2025",,,,,,,,,,,Amritsar,2025-03,3,1,0
+181808,Active Gel,,,,,,Active Olive Vit-E Night Gel,,,,,,FC-AC-OV-050,,,,,,"Jan 6, 2025",,,,,,,,,,,Gautam Buddha Nagar,2025-01,1,1,0
+182175,Face Malai,Face Malai,Active Gel,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,"Active Olive Vit-E Night Gel, Active Neem TeaTree Gel, Active Orange Kiwi Vit-C Gel",,,,FC-HHDM-FC-050,FC-HHDM-FC-050,"FC-AC-OK-050, FC-AC-OV-050, FC-AC-NT-050",,,,"Sep 10, 2024","Oct 22, 2024","Jan 3, 2025",,,,42,73,,,,Ernakulam,2024-09,9,3,1
+182191,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Oct 15, 2025",,,,,,,,,,,Chennai,2025-10,10,1,0
+182406,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Dec 12, 2024",,,,,,,,,,,New Delhi,2024-12,12,1,0
+182740,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 30, 2025",,,,,,,,,,,Faridabad,2025-05,5,1,0
+182823,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 20, 2024",,,,,,,,,,,Udaipur,2024-02,2,1,0
+182826,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 6, 2024",,,,,,,,,,,Pune,2024-03,3,1,0
+183470,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Apr 3, 2025",,,,,,,,,,,New Delhi,2025-04,4,1,0
+183738,Face Malai,Face Malai,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,FC-HDDM-FB-030,FC-DM-PG-030,,,,,"Apr 23, 2025","Dec 21, 2025",,,,,242,,,,,Pune,2025-04,4,2,1
+184047,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 18, 2025",,,,,,,,,,,Goa,2025-05,5,1,0
+184137,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Sep 5, 2025",,,,,,,,,,,Pune,2025-09,9,1,0
+185048,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Nov 24, 2024",,,,,,,,,,,Gurgaon,2024-11,11,1,0
+185430,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Apr 8, 2025",,,,,,,,,,,Gurgaon,2025-04,4,1,0
+185986,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Jan 7, 2025",,,,,,,,,,,Rajkot,2025-01,1,1,0
+186705,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jun 19, 2026",,,,,,,,,,,Bengaluru,2026-06,6,1,0
+186746,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Apr 15, 2024",,,,,,,,,,,Gurgaon,2024-04,4,1,0
+186913,Face Malai,Face Malai,Aloe Vera Gel,"Active Gel, Face Malai",,,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",Cocoa Mogra (Overnight) Face Malai - 30g,Aloe Vera Gel - 80 gms,"Cocoa Mogra (Overnight) Face Malai - 30g, Active Beetroot Tomato Vit-A Gel",,,"FC-HDDM-TR-030, FC-DM-NR-030",FC-DM-NR-030,FC-HG-PA-080,"FC-AC-BT-050, FC-DM-NR-030",,,"Jun 13, 2024","Jul 17, 2024","Jan 27, 2025","May 24, 2026",,,34,194,482,,,Gautam Buddha Nagar,2024-06,6,4,1
+187100,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g,,,,,,FC-HDDM-FB-050,,,,,,"Nov 7, 2025",,,,,,,,,,,Secunderabad,2025-11,11,1,0
+187823,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,,FC-DM-PG-050,,,,,,"Aug 10, 2024",,,,,,,,,,,Bagalkot,2024-08,8,1,0
+188148,Face Malai,,,,,,"Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,,"FC-CWDM-TP-030, FC-DM-PG-030",,,,,,"Sep 29, 2024",,,,,,,,,,,Nainital,2024-09,9,1,0
+188185,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 13, 2024",,,,,,,,,,,New Delhi,2024-03,3,1,0
+188311,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Oct 16, 2024",,,,,,,,,,,Meerut,2024-10,10,1,0
+188360,Active Gel,,,,,,Active Olive Vit-E Night Gel,,,,,,FC-AC-OV-050,,,,,,"Oct 23, 2024",,,,,,,,,,,Hooghly,2024-10,10,1,0
+188447,Face Malai,Face Malai,Face Malai,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,Flax Walnut (Cold) 35+ Face Malai,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,FC-HDDM-FB-030,FC-CWDM-FW-030,"FC-CWDM-FW-030, FC-DM-NR-030",,,,"Jun 7, 2024","Dec 2, 2024","Nov 6, 2025",,,,178,339,,,,Bengaluru,2024-06,6,3,1
+189015,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Sep 30, 2025",,,,,,,,,,,Bengaluru,2025-09,9,1,0
+189084,"Active Gel, Aloe Vera Gel",Aloe Vera Gel,,,,,"Aloe Vera Gel - 80 gms, Active Orange Kiwi Vit-C Gel",Aloe Vera Gel - 80 gms,,,,,"FC-HG-PA-080, FC-AC-OK-050",FC-HG-PA-080,,,,,"Dec 18, 2025","Feb 25, 2026",,,,,69,,,,,Mumbai,2025-12,12,2,1
+189156,Aloe Vera Gel,Face Malai,,,,,Aloe Vera Gel - 40 gms,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,FC-HG-PA-040,"FC-CWDM-FW-030, FC-DM-NR-030",,,,,"Oct 7, 2024","Jan 5, 2025",,,,,90,,,,,Meghalaya,2024-10,10,2,1
+189501,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Jun 26, 2025",,,,,,,,,,,New Delhi,2025-06,6,1,0
+190359,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 2, 2025",,,,,,,,,,,Jabalpur,2025-01,1,1,0
+190614,Face Malai,Aloe Vera Gel,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,Aloe Vera Gel - 80 gms,,,,,FC-HHDM-FC-030,FC-HG-PA-080,,,,,"Jul 11, 2025","Nov 4, 2025",,,,,116,,,,,Chennai,2025-07,7,2,1
+191152,"Aloe Vera Gel, Face Malai","Active Gel, Aloe Vera Gel",,,,,"Aloe Vera Gel - 80 gms, Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai - 50g","Aloe Vera Gel - 80 gms, Active Olive Vit-E Night Gel",,,,,"FC-HG-PA-080, FC-HHDM-TV-050","FC-AC-OV-050, FC-HG-PA-080",,,,,"Mar 16, 2026","Apr 27, 2026",,,,,42,,,,,Kolkata,2026-03,3,2,1
+191273,Face Malai,Face Malai,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 50g,,,,,FC-HHDM-FC-030,FC-HDDM-TR-050,,,,,"May 11, 2025","May 25, 2025",,,,,14,,,,,New Delhi,2025-05,5,2,1
+191326,Face Malai,Face Malai,Aloe Vera Gel,,,,"Flax Carrot (Hot Humid) 35+ Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",Flax Walnut (Cold) 35+ Face Malai,Aloe Vera Gel - 80 gms,,,,"FC-HHDM-FC-030, FC-DM-NR-030",FC-CWDM-FW-030,FC-HG-PA-080,,,,"Feb 11, 2024","Dec 15, 2024","Mar 4, 2025",,,,308,79,,,,Bengaluru,2024-02,2,3,1
+191387,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Apr 4, 2025",,,,,,,,,,,Secunderabad,2025-04,4,1,0
+191565,Face Malai,"Active Gel, Face Malai",Face Malai,Face Malai,Face Malai,,Clove Tea-Tree (Anti-Acne) Face Malai,"Clove Tea-Tree (Anti-Acne) Face Malai, Active Neem TeaTree Gel",Clove Tea-Tree (Anti-Acne) Face Malai,"Clove Tea-Tree (Anti-Acne) Face Malai, Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g","Clove Tea-Tree (Anti-Acne) Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,FC-DM-AA-030,"FC-DM-AA-030, FC-AC-NT-050",FC-DM-AA-030,"FC-DM-AA-030, FC-HDDM-FB-030, FC-HDDM-TR-030","FC-DM-AA-030, FC-DM-NR-030",,"Dec 8, 2025","Dec 25, 2025","Jan 14, 2026","Jan 26, 2026","Mar 7, 2026",,17,20,12,40,,Secunderabad,2025-12,12,5,1
+191595,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 1, 2024",,,,,,,,,,,Guwahati,2024-02,2,1,0
+191890,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 19, 2024",,,,,,,,,,,Indore,2024-01,1,1,0
+191942,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 17, 2024",,,,,,,,,,,Bengaluru,2024-04,4,1,0
+192153,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jun 2, 2026",,,,,,,,,,,Srinagar,2026-06,6,1,0
+192253,Active Gel,,,,,,Active Beetroot Tomato Vit-A Gel,,,,,,FC-AC-BT-050,,,,,,"Aug 4, 2024",,,,,,,,,,,Rewari,2024-08,8,1,0
+192419,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jul 13, 2025",,,,,,,,,,,Gautam Buddha Nagar,2025-07,7,1,0
+192768,Active Gel,Active Gel,Aloe Vera Gel,Active Gel,,,Active Orange Kiwi Vit-C Gel,Active Beetroot Tomato Vit-A Gel,Aloe Vera Gel - 40 gms,Active Beetroot Tomato Vit-A Gel,,,FC-AC-OK-050,FC-AC-BT-050,FC-HG-PA-040,FC-AC-BT-050,,,"Sep 9, 2024","Dec 22, 2024","Dec 28, 2024","Feb 16, 2025",,,104,6,50,,,Mumbai,2024-09,9,4,1
+192777,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Jan 18, 2026",,,,,,,,,,,Dungarpur,2026-01,1,1,0
+193543,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 18, 2024",,,,,,,,,,,Sibsagar,2024-01,1,1,0
+193766,Face Malai,Face Malai,Aloe Vera Gel,,,,"Cocoa Mogra (Overnight) Face Malai - 30g, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",Clove Tea-Tree (Anti-Acne) Face Malai,Aloe Vera Gel - 40 gms,,,,"FC-DM-PG-030, FC-DM-NR-030",FC-DM-AA-030,FC-HG-PA-040,,,,"Jul 14, 2024","Jul 18, 2024","Nov 15, 2024",,,,4,120,,,,Mumbai,2024-07,7,3,1
+193848,Face Malai,Face Malai,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,FC-DM-DP-030,FC-DM-AA-030,,,,,"Mar 9, 2025","Jun 25, 2026",,,,,473,,,,,Bengaluru,2025-03,3,2,1
+194534,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 2, 2024",,,,,,,,,,,Bengaluru,2024-01,1,1,0
+194827,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Mar 5, 2026",,,,,,,,,,,Faridabad,2026-03,3,1,0
+194937,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 28, 2024",,,,,,,,,,,Rajouri,2024-02,2,1,0
+195938,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Aug 19, 2024",,,,,,,,,,,Bengaluru,2024-08,8,1,0
+195944,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 21, 2024",,,,,,,,,,,Chennai,2024-02,2,1,0
+196026,Active Gel,,,,,,Active Neem TeaTree Gel,,,,,,FC-AC-NT-050,,,,,,"Oct 27, 2024",,,,,,,,,,,Bengaluru,2024-10,10,1,0
+196622,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Oct 8, 2025",,,,,,,,,,,Kolkata,2025-10,10,1,0
+196712,Face Malai,"Active Gel, Face Malai",Face Malai,Face Malai,Face Malai,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,"Flax Carrot (Hot Humid) 35+ Face Malai - 50g, Active Orange Kiwi Vit-C Gel",Flax Walnut (Cold) 35+ Face Malai,"Flax Carrot (Hot Humid) 35+ Face Malai - 50g, Cocoa Mogra (Overnight) Face Malai - 50g ",Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,FC-HHDM-FC-030,"FC-HHDM-FC-050, FC-AC-OK-050",FC-CWDM-FW-030,"FC-DM-NR-050, FC-HHDM-FC-050",FC-HHDM-FC-050,,"May 29, 2024","Jul 22, 2024","Dec 17, 2024","Feb 16, 2025","Jun 11, 2025",,54,148,61,115,,Chandigarh,2024-05,5,5,1
+196948,Aloe Vera Gel,Face Malai,,,,,Aloe Vera Gel - 80 gms,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,FC-HG-PA-080,FC-DM-PG-050,,,,,"Aug 6, 2025","Dec 22, 2025",,,,,138,,,,,Tumakuru,2025-08,8,2,1
+197371,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jun 11, 2025",,,,,,,,,,,Bengaluru,2025-06,6,1,0
+197493,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Apr 18, 2025",,,,,,,,,,,Kanpur,2025-04,4,1,0
+198049,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Aug 7, 2025",,,,,,,,,,,Srinagar,2025-08,8,1,0
+198582,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"May 10, 2026",,,,,,,,,,,Darjeeling,2026-05,5,1,0
+198825,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Feb 5, 2025",,,,,,,,,,,Ranchi,2025-02,2,1,0
+199273,Face Malai,Face Malai,"Active Gel, Face Malai",Face Malai,Face Malai,Face Malai,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,"Flax Carrot (Hot Humid) 35+ Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g, Active Olive Vit-E Night Gel",Flax Walnut (Cold) 35+ Face Malai,Cocoa Mogra (Overnight) Face Malai - 30g,Flax Walnut (Cold) 35+ Face Malai,FC-HHDM-FC-030,FC-HHDM-FC-050,"FC-AC-OV-050, FC-DM-NR-030, FC-HHDM-FC-030",FC-CWDM-FW-030,FC-DM-NR-030,FC-CWDM-FW-030,"Aug 1, 2024","Aug 15, 2024","Sep 24, 2024","Nov 9, 2024","Nov 30, 2024","Dec 9, 2024",14,40,46,21,9,Kolkata,2024-08,8,6,1
+199287,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Jun 23, 2026",,,,,,,,,,,Ernakulam,2026-06,6,1,0
+199979,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Feb 5, 2024",,,,,,,,,,,New Delhi,2024-02,2,1,0
+200296,Aloe Vera Gel,Face Malai,Aloe Vera Gel,Face Malai,,,Aloe Vera Gel - 40 gms,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,Aloe Vera Gel - 40 gms,Cocoa Mogra (Overnight) Face Malai - 30g,,,FC-HG-PA-040,FC-HDDM-FB-030,FC-HG-PA-040,FC-DM-NR-030,,,"May 4, 2024","May 30, 2024","Jun 25, 2024","Dec 3, 2024",,,26,26,161,,,Jaipur,2024-05,5,4,1
+201062,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"May 8, 2025",,,,,,,,,,,Keonjhar,2025-05,5,1,0
+201134,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"May 15, 2026",,,,,,,,,,,Coimbatore,2026-05,5,1,0
+201238,Active Gel,,,,,,"Active Olive Vit-E Night Gel, Active Orange Kiwi Vit-C Gel",,,,,,"FC-AC-OV-050, FC-AC-OK-050",,,,,,"Mar 15, 2024",,,,,,,,,,,Bhatinda,2024-03,3,1,0
+201344,Face Malai,"Active Gel, Face Malai",,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,"Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g, Active Olive Vit-E Night Gel",,,,,FC-DM-DP-030,"FC-HDDM-FB-050, FC-AC-OV-050",,,,,"Jan 17, 2025","Feb 13, 2025",,,,,27,,,,,Ahmedabad,2025-01,1,2,1
+201455,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Mar 3, 2024",,,,,,,,,,,Ghaziabad,2024-03,3,1,0
+201692,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 80 gms, Turmeric Nutmeg (Pigmentation)  Face Malai - 50g ",,,,,,"FC-DM-PG-050, FC-HG-PA-080",,,,,,"Apr 12, 2025",,,,,,,,,,,Bengaluru,2025-04,4,1,0
+201812,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Aug 17, 2025",,,,,,,,,,,Mumbai,2025-08,8,1,0
+201976,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Nov 17, 2024",,,,,,,,,,,Pune,2024-11,11,1,0
+202061,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"May 9, 2024",,,,,,,,,,,Sangrur,2024-05,5,1,0
+202449,"Active Gel, Face Malai",Face Malai,Aloe Vera Gel,,,,"Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g, Active Orange Kiwi Vit-C Gel",Flax Carrot (Hot Humid) 35+ Face Malai - 30g,Aloe Vera Gel - 40 gms,,,,"FC-HDDM-FB-030, FC-AC-OK-050",FC-HHDM-FC-030,FC-HG-PA-040,,,,"May 15, 2024","Oct 8, 2024","Jan 1, 2025",,,,146,85,,,,Tirupur,2024-05,5,3,1
+202572,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 7, 2025",,,,,,,,,,,New Delhi,2025-05,5,1,0
+203233,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"May 31, 2024",,,,,,,,,,,Faridabad,2024-05,5,1,0
+203272,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jul 4, 2026",,,,,,,,,,,Thane,2026-07,7,1,0
+203565,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Dec 4, 2024",,,,,,,,,,,Dhenkanal,2024-12,12,1,0
+204532,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 7, 2024",,,,,,,,,,,Bengaluru,2024-04,4,1,0
+204622,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"May 3, 2026",,,,,,,,,,,Gwalior,2026-05,5,1,0
+204952,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 28, 2025",,,,,,,,,,,Barrackpore,2025-04,4,1,0
+205074,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jul 22, 2024",,,,,,,,,,,Chandigarh,2024-07,7,1,0
+205544,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Aug 11, 2025",,,,,,,,,,,Mumbai,2025-08,8,1,0
+206501,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 30, 2024",,,,,,,,,,,New Delhi,2024-06,6,1,0
+206965,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Aug 14, 2024",,,,,,,,,,,Coimbatore,2024-08,8,1,0
+207151,Active Gel,,,,,,Active Olive Vit-E Night Gel,,,,,,FC-AC-OV-050,,,,,,"Aug 18, 2025",,,,,,,,,,,Ranchi,2025-08,8,1,0
+207225,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Aug 29, 2024",,,,,,,,,,,Baruipur,2024-08,8,1,0
+207863,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 24, 2024",,,,,,,,,,,Ghaziabad,2024-01,1,1,0
+207953,Face Malai,,,,,,"Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-HHDM-TV-030, FC-DM-NR-030",,,,,,"Jul 4, 2025",,,,,,,,,,,Chennai,2025-07,7,1,0
+208177,Face Malai,Aloe Vera Gel,Active Gel,,,,Clove Tea-Tree (Anti-Acne) Face Malai,Aloe Vera Gel - 40 gms,Active Orange Kiwi Vit-C Gel,,,,FC-DM-AA-030,FC-HG-PA-040,FC-AC-OK-050,,,,"Aug 7, 2024","Sep 6, 2024","Nov 14, 2025",,,,30,434,,,,Vijayawada,2024-08,8,3,1
+209197,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 1, 2024",,,,,,,,,,,Bengaluru,2024-06,6,1,0
+209247,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Jan 4, 2024",,,,,,,,,,,Guwahati,2024-01,1,1,0
+209295,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 7, 2025",,,,,,,,,,,Vadodara,2025-04,4,1,0
+210585,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Aug 16, 2024",,,,,,,,,,,Secunderabad,2024-08,8,1,0
+211671,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 23, 2024",,,,,,,,,,,Bankura,2024-05,5,1,0
+211797,"Active Gel, Aloe Vera Gel",,,,,,"Aloe Vera Gel - 40 gms, Active Orange Kiwi Vit-C Gel",,,,,,"FC-HG-PA-040, FC-AC-OK-050",,,,,,"Apr 27, 2024",,,,,,,,,,,Bengaluru,2024-04,4,1,0
+212312,Active Gel,Active Gel,,,,,Active Neem TeaTree Gel,Active Neem TeaTree Gel,,,,,FC-AC-NT-050,FC-AC-NT-050,,,,,"Jun 13, 2024","Nov 17, 2024",,,,,157,,,,,Bengaluru,2024-06,6,2,1
+213379,Face Malai,,,,,,Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai,,,,,,FC-CWDM-BT-030,,,,,,"Jan 3, 2024",,,,,,,,,,,Gurdaspur,2024-01,1,1,0
+213441,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Nov 12, 2024",,,,,,,,,,,Navi Mumbai,2024-11,11,1,0
+213472,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jul 1, 2026",,,,,,,,,,,Mumbai,2026-07,7,1,0
+213698,Active Gel,,,,,,Active Neem TeaTree Gel,,,,,,FC-AC-NT-050,,,,,,"Jan 22, 2025",,,,,,,,,,,Bengaluru,2025-01,1,1,0
+213778,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"May 1, 2024",,,,,,,,,,,New Delhi,2024-05,5,1,0
+213781,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 22, 2026",,,,,,,,,,,Sonipat,2026-05,5,1,0
+214080,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Oct 5, 2024",,,,,,,,,,,Thane,2024-10,10,1,0
+214195,Face Malai,Face Malai,Face Malai,Face Malai,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,"Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai, Turmeric Nutmeg (Pigmentation)  Face Malai - 50g , Flax Walnut (Cold) 35+ Face Malai",Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,FC-HDDM-FB-030,"FC-CWDM-FW-030, FC-CWDM-BT-030, FC-DM-PG-050",FC-DM-PG-050,FC-DM-PG-050,,,"May 7, 2024","Aug 21, 2024","Jun 25, 2025","Jun 6, 2026",,,106,308,346,,,Ghaziabad,2024-05,5,4,1
+215209,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Aug 16, 2025",,,,,,,,,,,Gurgaon,2025-08,8,1,0
+215701,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 12, 2024",,,,,,,,,,,Cuttack,2024-02,2,1,0
+216326,Face Malai,Face Malai,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 50g,,,,,FC-DM-PG-030,FC-HDDM-TR-050,,,,,"Oct 18, 2024","Apr 12, 2026",,,,,541,,,,,New Delhi,2024-10,10,2,1
+216810,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jan 30, 2025",,,,,,,,,,,Trivandrum,2025-01,1,1,0
+217035,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Jun 16, 2024",,,,,,,,,,,Gurgaon,2024-06,6,1,0
+217054,Face Malai,Face Malai,Active Gel,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,"Active Olive Vit-E Night Gel, Active Orange Kiwi Vit-C Gel",,,,FC-HHDM-FC-030,FC-HDDM-TR-030,"FC-AC-OV-050, FC-AC-OK-050",,,,"Mar 3, 2025","Mar 3, 2025","May 21, 2026",,,,0,444,,,,Hyderabad,2025-03,3,3,1
+217359,Face Malai,Face Malai,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,FC-DM-PG-030,FC-DM-PG-030,,,,,"Oct 3, 2025","Jan 5, 2026",,,,,94,,,,,Dehradun,2025-10,10,2,1
+217380,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"May 24, 2025",,,,,,,,,,,Prayagraj,2025-05,5,1,0
+217424,"Aloe Vera Gel, Face Malai",,,,,,"Aloe Vera Gel - 80 gms, Flax Carrot (Hot Humid) 35+ Face Malai - 30g, Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-HG-PA-080, FC-DM-NR-030, FC-HHDM-FC-030",,,,,,"Jul 21, 2025",,,,,,,,,,,Nalgonda,2025-07,7,1,0
+217710,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 13, 2024",,,,,,,,,,,Thane,2024-02,2,1,0
+218016,Active Gel,,,,,,"Active Olive Vit-E Night Gel, Active Neem TeaTree Gel, Active Orange Kiwi Vit-C Gel",,,,,,"FC-AC-NT-050, FC-AC-OV-050, FC-AC-OK-050",,,,,,"Oct 31, 2024",,,,,,,,,,,Sangareddy,2024-10,10,1,0
+218138,Active Gel,,,,,,Active Neem TeaTree Gel,,,,,,FC-AC-NT-050,,,,,,"Mar 21, 2026",,,,,,,,,,,Hissar,2026-03,3,1,0
+218748,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Sep 4, 2024",,,,,,,,,,,Bengaluru,2024-09,9,1,0
+218938,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Dec 1, 2024",,,,,,,,,,,Ahmedabad,2024-12,12,1,0
+219059,Active Gel,,,,,,Active Aloe Cactus Hydra Lift Gel,,,,,,FC-AC-AC-050,,,,,,"Mar 24, 2024",,,,,,,,,,,Indore,2024-03,3,1,0
+219070,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 9, 2024",,,,,,,,,,,Bengaluru,2024-02,2,1,0
+219416,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Jan 17, 2024",,,,,,,,,,,Ghaziabad,2024-01,1,1,0
+219706,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Sep 14, 2025",,,,,,,,,,,Tambaram,2025-09,9,1,0
+219724,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jul 19, 2024",,,,,,,,,,,Tiruchirapalli,2024-07,7,1,0
+220558,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jun 23, 2025",,,,,,,,,,,Hapur,2025-06,6,1,0
+220645,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Oct 2, 2024",,,,,,,,,,,Ernakulam,2024-10,10,1,0
+220697,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 11, 2025",,,,,,,,,,,Shivamogga,2025-06,6,1,0
+220813,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jul 23, 2024",,,,,,,,,,,Secunderabad,2024-07,7,1,0
+221011,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jan 21, 2025",,,,,,,,,,,NA,2025-01,1,1,0
+221043,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Jul 26, 2024",,,,,,,,,,,Eluru,2024-07,7,1,0
+221643,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 5, 2024",,,,,,,,,,,Pune,2024-01,1,1,0
+222169,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Nov 8, 2024",,,,,,,,,,,Bhubaneswar,2024-11,11,1,0
+222198,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jun 8, 2025",,,,,,,,,,,Jaipur,2025-06,6,1,0
+222206,Face Malai,Face Malai,Face Malai,Face Malai,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,FC-DM-PG-030,FC-DM-PG-030,FC-DM-PG-030,FC-HDDM-FB-030,,,"Feb 26, 2024","Nov 13, 2024","Mar 25, 2025","Dec 21, 2025",,,261,132,271,,,New Delhi,2024-02,2,4,1
+222525,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Oct 12, 2024",,,,,,,,,,,Ernakulam,2024-10,10,1,0
+222547,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-DM-NR-030",,,,,,"Dec 1, 2025",,,,,,,,,,,Raigarh,2025-12,12,1,0
+222819,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Nov 2, 2024",,,,,,,,,,,Thane,2024-11,11,1,0
+222905,Active Gel,,,,,,Active Olive Vit-E Night Gel,,,,,,FC-AC-OV-050,,,,,,"Jul 5, 2026",,,,,,,,,,,Rewa,2026-07,7,1,0
+223271,Face Malai,Face Malai,,,,,Flax Walnut (Cold) 35+ Face Malai,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,,,,FC-CWDM-FW-030,FC-HHDM-FC-050,,,,,"Jan 2, 2024","Aug 21, 2024",,,,,232,,,,,Darjeeling,2024-01,1,2,1
+224193,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 20, 2025",,,,,,,,,,,Kanpur,2025-05,5,1,0
+224422,Face Malai,,,,,,"Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai, Flax Walnut (Cold) 35+ Face Malai",,,,,,"FC-CWDM-FW-030, FC-CWDM-BT-030",,,,,,"Nov 22, 2024",,,,,,,,,,,Dhanbad,2024-11,11,1,0
+224706,"Active Gel, Face Malai",,,,,,"Clove Tea-Tree (Anti-Acne) Face Malai, Active Neem TeaTree Gel",,,,,,"FC-DM-AA-030, FC-AC-NT-050",,,,,,"Sep 26, 2024",,,,,,,,,,,Kolkata,2024-09,9,1,0
+224838,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 5, 2025",,,,,,,,,,,Bengaluru,2025-04,4,1,0
+225520,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Nov 26, 2025",,,,,,,,,,,Pune,2025-11,11,1,0
+225866,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"May 15, 2024",,,,,,,,,,,Kanpur,2024-05,5,1,0
+226312,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Jul 31, 2024",,,,,,,,,,,Sabarkantha,2024-07,7,1,0
+226495,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Aug 6, 2024",,,,,,,,,,,Bengaluru,2024-08,8,1,0
+226651,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Mar 5, 2025",,,,,,,,,,,Nagpur,2025-03,3,1,0
+226947,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 3, 2024",,,,,,,,,,,Kolkata,2024-05,5,1,0
+227021,Face Malai,Face Malai,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,FC-DM-AA-030,FC-DM-PG-030,,,,,"Aug 2, 2024","Jan 13, 2026",,,,,529,,,,,Baruipur,2024-08,8,2,1
+227117,Aloe Vera Gel,Aloe Vera Gel,,,,,Aloe Vera Gel - 80 gms,Aloe Vera Gel - 80 gms,,,,,FC-HG-PA-080,FC-HG-PA-080,,,,,"Nov 9, 2025","Nov 20, 2025",,,,,11,,,,,New Delhi,2025-11,11,2,1
+227346,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Aug 31, 2025",,,,,,,,,,,Mumbai,2025-08,8,1,0
+227754,Face Malai,Face Malai,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 50g,"Flax Walnut (Cold) 35+ Face Malai, Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai",,,,,FC-HDDM-TR-050,"FC-CWDM-TP-030, FC-CWDM-FW-030",,,,,"Nov 13, 2024","Oct 21, 2025",,,,,342,,,,,Bhatinda,2024-11,11,2,1
+227942,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 18, 2024",,,,,,,,,,,Surat,2024-04,4,1,0
+228356,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 17, 2024",,,,,,,,,,,Jodhpur,2024-01,1,1,0
+228397,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Oct 9, 2024",,,,,,,,,,,Mumbai,2024-10,10,1,0
+228673,"Active Gel, Face Malai",,,,,,"Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g, Active Olive Vit-E Night Gel",,,,,,"FC-AC-OV-050, FC-HDDM-FB-030",,,,,,"Jan 14, 2024",,,,,,,,,,,Bengaluru,2024-01,1,1,0
+228781,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Aug 13, 2024",,,,,,,,,,,Mumbai,2024-08,8,1,0
+228855,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Jul 11, 2024",,,,,,,,,,,Kolkata,2024-07,7,1,0
+228916,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jan 27, 2026",,,,,,,,,,,Nilgiris,2026-01,1,1,0
+229343,Active Gel,,,,,,Active Beetroot Tomato Vit-A Gel,,,,,,FC-AC-BT-050,,,,,,"Apr 10, 2025",,,,,,,,,,,Pune,2025-04,4,1,0
+229389,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"May 7, 2026",,,,,,,,,,,Bhubaneswar,2026-05,5,1,0
+229404,Face Malai,Aloe Vera Gel,Aloe Vera Gel,,,,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",Aloe Vera Gel - 80 gms,Aloe Vera Gel - 80 gms,,,,"FC-HDDM-TR-030, FC-DM-NR-030",FC-HG-PA-080,FC-HG-PA-080,,,,"Aug 8, 2025","Aug 13, 2025","Sep 6, 2025",,,,5,24,,,,Hooghly,2025-08,8,3,1
+230080,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 3, 2024",,,,,,,,,,,Ahmedabad,2024-04,4,1,0
+230258,Face Malai,Face Malai,Face Malai,Face Malai,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,Flax Walnut (Cold) 35+ Face Malai,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,FC-HHDM-FC-030,FC-HHDM-FC-030,FC-CWDM-FW-030,FC-DM-PG-030,,,"Jan 29, 2025","Jul 28, 2025","Dec 24, 2025","Mar 21, 2026",,,180,149,87,,,Mumbai,2025-01,1,4,1
+230551,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-DM-NR-030",,,,,,"Nov 11, 2025",,,,,,,,,,,Darjeeling,2025-11,11,1,0
+230966,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"Apr 14, 2025",,,,,,,,,,,Pune,2025-04,4,1,0
+232004,Face Malai,,,,,,"Honey Multi-Nut (Dry & Peeling Skin) Face Malai, Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai, Cocoa Mogra (Overnight) Face Malai - 50g ",,,,,,"FC-CWDM-TP-030, FC-DM-NR-050, FC-DM-DP-030",,,,,,"Dec 12, 2024",,,,,,,,,,,Kurukshetra,2024-12,12,1,0
+233410,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 21, 2025",,,,,,,,,,,Meerut,2025-04,4,1,0
+233727,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Dec 5, 2024",,,,,,,,,,,New Delhi,2024-12,12,1,0
+233823,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jan 28, 2025",,,,,,,,,,,Tirupur,2025-01,1,1,0
+234395,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Aug 20, 2024",,,,,,,,,,,Sonipat,2024-08,8,1,0
+234489,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Nov 11, 2024",,,,,,,,,,,New Delhi,2024-11,11,1,0
+234655,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Feb 9, 2025",,,,,,,,,,,Thane,2025-02,2,1,0
+234675,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Dec 28, 2024",,,,,,,,,,,Surat,2024-12,12,1,0
+234740,Active Gel,Face Malai,,,,,Active Aloe Cactus Hydra Lift Gel,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,FC-AC-AC-050,FC-HHDM-FC-030,,,,,"Jan 2, 2024","Feb 2, 2024",,,,,31,,,,,Thane,2024-01,1,2,1
+235194,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Dec 17, 2024",,,,,,,,,,,New Delhi,2024-12,12,1,0
+235254,Active Gel,Face Malai,,,,,Active Orange Kiwi Vit-C Gel,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,FC-AC-OK-050,FC-HHDM-FC-030,,,,,"Jul 5, 2025","Feb 7, 2026",,,,,217,,,,,Navi Mumbai,2025-07,7,2,1
+235351,Face Malai,,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,,FC-DM-DP-030,,,,,,"Jan 26, 2024",,,,,,,,,,,Agartala,2024-01,1,1,0
+235562,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 2, 2024",,,,,,,,,,,Tenali,2024-02,2,1,0
+235722,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Apr 2, 2026",,,,,,,,,,,Gautam Buddha Nagar,2026-04,4,1,0
+236109,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 5, 2024",,,,,,,,,,,Trivandrum,2024-04,4,1,0
+236397,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Aug 27, 2024",,,,,,,,,,,Ghaziabad,2024-08,8,1,0
+237132,Face Malai,,,,,,"Cocoa Mogra (Overnight) Face Malai - 30g, Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai - 50g",,,,,,"FC-DM-NR-030, FC-HHDM-TV-050",,,,,,"Mar 19, 2026",,,,,,,,,,,Birbhum,2026-03,3,1,0
+237835,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 25, 2024",,,,,,,,,,,Gwalior,2024-04,4,1,0
+237927,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jul 8, 2025",,,,,,,,,,,Bengaluru,2025-07,7,1,0
+237997,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Apr 24, 2026",,,,,,,,,,,Hoshiarpur,2026-04,4,1,0
+238174,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,,FC-DM-PG-050,,,,,,"Nov 14, 2024",,,,,,,,,,,Thane,2024-11,11,1,0
+238180,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Apr 1, 2025",,,,,,,,,,,Navi Mumbai,2025-04,4,1,0
+239234,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Dec 1, 2025",,,,,,,,,,,Thane,2025-12,12,1,0
+239283,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 21, 2024",,,,,,,,,,,Indore,2024-06,6,1,0
+239334,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 10, 2025",,,,,,,,,,,Jalandhar,2025-11,11,1,0
+239670,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 17, 2025",,,,,,,,,,,Bengaluru,2025-04,4,1,0
+240694,Face Malai,,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 50g , Cocoa Mogra (Overnight) Face Malai - 50g ",,,,,,"FC-DM-PG-050, FC-DM-NR-050",,,,,,"Aug 9, 2025",,,,,,,,,,,Mumbai,2025-08,8,1,0
+240775,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 16, 2025",,,,,,,,,,,New Delhi,2025-11,11,1,0
+241127,Face Malai,,,,,,Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai,,,,,,FC-CWDM-BT-030,,,,,,"Oct 29, 2025",,,,,,,,,,,Bhopal,2025-10,10,1,0
+241521,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Mar 16, 2025",,,,,,,,,,,Mumbai,2025-03,3,1,0
+241666,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 11, 2025",,,,,,,,,,,Thane,2025-05,5,1,0
+241900,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"May 10, 2025",,,,,,,,,,,Bengaluru,2025-05,5,1,0
+242032,Face Malai,Face Malai,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,FC-HDDM-FB-030,FC-HDDM-FB-030,,,,,"Oct 5, 2024","Nov 15, 2024",,,,,41,,,,,Kasaragod,2024-10,10,2,1
+242092,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Aug 12, 2024",,,,,,,,,,,Darjeeling,2024-08,8,1,0
+242215,Face Malai,,,,,,Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai,,,,,,FC-CWDM-BT-030,,,,,,"Nov 17, 2025",,,,,,,,,,,Ranchi,2025-11,11,1,0
+242271,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jun 8, 2024",,,,,,,,,,,Thane,2024-06,6,1,0
+242355,Face Malai,Active Gel,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,Active Orange Kiwi Vit-C Gel,,,,,FC-HDDM-TR-030,FC-AC-OK-050,,,,,"Feb 25, 2024","Aug 2, 2024",,,,,159,,,,,New Delhi,2024-02,2,2,1
+242479,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Apr 5, 2024",,,,,,,,,,,Koraput,2024-04,4,1,0
+242511,Active Gel,,,,,,"Active Olive Vit-E Night Gel, Active Orange Kiwi Vit-C Gel",,,,,,"FC-AC-OV-050, FC-AC-OK-050",,,,,,"Nov 4, 2024",,,,,,,,,,,New Delhi,2024-11,11,1,0
+242691,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jan 20, 2024",,,,,,,,,,,Ambala,2024-01,1,1,0
+242914,"Active Gel, Face Malai",,,,,,"Flax Carrot (Hot Humid) 35+ Face Malai - 30g, Active Orange Kiwi Vit-C Gel",,,,,,"FC-HHDM-FC-030, FC-AC-OK-050",,,,,,"Feb 19, 2024",,,,,,,,,,,Kolkata,2024-02,2,1,0
+243448,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Aug 5, 2025",,,,,,,,,,,Bengaluru,2025-08,8,1,0
+243589,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 50g,,,,,,FC-HHDM-FC-050,,,,,,"May 12, 2024",,,,,,,,,,,Gurgaon,2024-05,5,1,0
+244651,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jun 14, 2024",,,,,,,,,,,Agra,2024-06,6,1,0
+245049,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jan 25, 2024",,,,,,,,,,,Asansol,2024-01,1,1,0
+245305,"Active Gel, Face Malai","Active Gel, Face Malai",,,,,"Cocoa Mogra (Overnight) Face Malai - 30g, Active Aloe Cactus Hydra Lift Gel, Active Olive Vit-E Night Gel","Active Orange Kiwi Vit-C Gel, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,"FC-AC-AC-050, FC-AC-OV-050, FC-DM-NR-030","FC-DM-PG-030, FC-AC-OK-050",,,,,"Jan 7, 2024","Feb 2, 2024",,,,,26,,,,,Bengaluru,2024-01,1,2,1
+245319,Face Malai,Face Malai,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,"Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai, Flax Walnut (Cold) 35+ Face Malai",,,,,FC-HHDM-FC-030,"FC-CWDM-FW-030, FC-CWDM-BT-030",,,,,"Oct 18, 2024","Jun 16, 2025",,,,,241,,,,,Bengaluru,2024-10,10,2,1
+245403,Active Gel,,,,,,Active Neem TeaTree Gel,,,,,,FC-AC-NT-050,,,,,,"Jul 20, 2025",,,,,,,,,,,Gautam Buddha Nagar,2025-07,7,1,0
+246900,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Mar 20, 2024",,,,,,,,,,,Srinagar,2024-03,3,1,0
+247348,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 18, 2024",,,,,,,,,,,Bengaluru,2024-05,5,1,0
+247553,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Mar 26, 2025",,,,,,,,,,,Pune,2025-03,3,1,0
+247733,Face Malai,Face Malai,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 50g,,,,,FC-HHDM-TV-030,FC-HDDM-TR-050,,,,,"Feb 7, 2025","Apr 21, 2025",,,,,73,,,,,Kurnool,2025-02,2,2,1
+248129,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Jul 23, 2024",,,,,,,,,,,Bengaluru,2024-07,7,1,0
+248328,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Sep 23, 2024",,,,,,,,,,,New Delhi,2024-09,9,1,0
+248433,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Apr 5, 2025",,,,,,,,,,,Goa,2025-04,4,1,0
+248763,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Aug 2, 2024",,,,,,,,,,,Chandigarh,2024-08,8,1,0
+249752,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Mar 19, 2025",,,,,,,,,,,Bengaluru,2025-03,3,1,0
+249777,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Aug 25, 2024",,,,,,,,,,,Thane,2024-08,8,1,0
+249982,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Oct 13, 2024",,,,,,,,,,,Chandrapur,2024-10,10,1,0
+250015,Active Gel,,,,,,Active Neem TeaTree Gel,,,,,,FC-AC-NT-050,,,,,,"Apr 20, 2026",,,,,,,,,,,Bengaluru,2026-04,4,1,0
+250242,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 16, 2025",,,,,,,,,,,Bengaluru,2025-04,4,1,0
+250298,Face Malai,,,,,,"Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-HHDM-TV-030, FC-DM-NR-030",,,,,,"Nov 23, 2024",,,,,,,,,,,Chennai,2024-11,11,1,0
+250360,Active Gel,Face Malai,,,,,Active Neem TeaTree Gel,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,FC-AC-NT-050,FC-DM-PG-030,,,,,"Mar 11, 2025","Mar 12, 2025",,,,,1,,,,,Surguja,2025-03,3,2,1
+250457,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"Dec 9, 2024",,,,,,,,,,,Sangareddy,2024-12,12,1,0
+250950,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Oct 7, 2024",,,,,,,,,,,Ghaziabad,2024-10,10,1,0
+251512,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Aug 2, 2025",,,,,,,,,,,Vijayawada,2025-08,8,1,0
+251797,Active Gel,,,,,,Active Aloe Cactus Hydra Lift Gel,,,,,,FC-AC-AC-050,,,,,,"Apr 13, 2025",,,,,,,,,,,Hyderabad,2025-04,4,1,0
+252552,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 21, 2024",,,,,,,,,,,Thane,2024-02,2,1,0
+253366,Face Malai,Active Gel,Face Malai,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,"Active Beetroot Tomato Vit-A Gel, Active Orange Kiwi Vit-C Gel",Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,FC-DM-PG-030,"FC-AC-BT-050, FC-AC-OK-050",FC-DM-PG-030,,,,"Nov 28, 2024","Apr 13, 2025","Sep 14, 2025",,,,136,154,,,,Hissar,2024-11,11,3,1
+254229,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g,,,,,,FC-HDDM-FB-050,,,,,,"Jul 31, 2024",,,,,,,,,,,Pune,2024-07,7,1,0
+254263,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Feb 26, 2025",,,,,,,,,,,Mumbai,2025-02,2,1,0
+254362,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-DM-NR-030",,,,,,"Jan 29, 2024",,,,,,,,,,,Burdwan,2024-01,1,1,0
+254714,Face Malai,Face Malai,Face Malai,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,FC-DM-DP-030,FC-HHDM-TV-030,FC-DM-PG-030,,,,"Dec 24, 2024","Apr 5, 2025","Aug 6, 2025",,,,102,123,,,,New Delhi,2024-12,12,3,1
+255246,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Jan 6, 2025",,,,,,,,,,,Bengaluru,2025-01,1,1,0
+255665,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-DM-NR-030",,,,,,"Jan 14, 2024",,,,,,,,,,,Amritsar,2024-01,1,1,0
+255709,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Aug 5, 2024",,,,,,,,,,,Moradabad,2024-08,8,1,0
+255952,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Mar 17, 2025",,,,,,,,,,,Vadodara,2025-03,3,1,0
+256172,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-DM-NR-030",,,,,,"Dec 9, 2025",,,,,,,,,,,Indore,2025-12,12,1,0
+256431,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Mar 4, 2026",,,,,,,,,,,Chennai,2026-03,3,1,0
+256726,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 16, 2024",,,,,,,,,,,Belagavi,2024-02,2,1,0
+256771,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 29, 2025",,,,,,,,,,,Karur,2025-04,4,1,0
+256781,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Apr 2, 2025",,,,,,,,,,,Jaipur,2025-04,4,1,0
+256829,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Jul 23, 2025",,,,,,,,,,,Calicut,2025-07,7,1,0
+257189,Face Malai,Face Malai,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,FC-HDDM-FB-050,FC-DM-DP-030,,,,,"Jan 15, 2026","Feb 19, 2026",,,,,35,,,,,Chennai,2026-01,1,2,1
+258000,Face Malai,,,,,,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,,FC-HDDM-TR-030,,,,,,"Feb 26, 2024",,,,,,,,,,,Pune,2024-02,2,1,0
+258438,Face Malai,,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,,,,,,FC-HHDM-TV-030,,,,,,"Mar 20, 2025",,,,,,,,,,,Secunderabad,2025-03,3,1,0
+258537,Face Malai,Face Malai,,,,,Tomato Vetiver (Hot Humid) 20 - 35 Yrs Face Malai,Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,FC-HHDM-TV-030,FC-HDDM-TR-030,,,,,"Nov 20, 2024","Jan 18, 2025",,,,,59,,,,,Bengaluru,2024-11,11,2,1
+258607,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 4, 2024",,,,,,,,,,,Ernakulam,2024-05,5,1,0
+259390,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Jun 7, 2024",,,,,,,,,,,Mumbai,2024-06,6,1,0
+259425,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jun 7, 2024",,,,,,,,,,,Mumbai,2024-06,6,1,0
+259834,Active Gel,,,,,,"Active Olive Vit-E Night Gel, Active Orange Kiwi Vit-C Gel",,,,,,"FC-AC-OV-050, FC-AC-OK-050",,,,,,"May 14, 2026",,,,,,,,,,,Mumbai,2026-05,5,1,0
+259940,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Aug 15, 2025",,,,,,,,,,,Solapur,2025-08,8,1,0
+260036,Face Malai,Face Malai,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g,Flax Walnut (Cold) 35+ Face Malai,,,,,FC-HDDM-FB-050,FC-CWDM-FW-030,,,,,"Jan 8, 2025","Jun 12, 2025",,,,,155,,,,,Bengaluru,2025-01,1,2,1
+261296,Active Gel,,,,,,Active Beetroot Tomato Vit-A Gel,,,,,,FC-AC-BT-050,,,,,,"Aug 4, 2024",,,,,,,,,,,Bengaluru,2024-08,8,1,0
+261407,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,,"FC-CWDM-FW-030, FC-DM-PG-030",,,,,,"Jan 5, 2025",,,,,,,,,,,Chittorgarh,2025-01,1,1,0
+261456,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Oct 24, 2024",,,,,,,,,,,Indore,2024-10,10,1,0
+261458,Active Gel,Face Malai,,,,,Active Olive Vit-E Night Gel,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,FC-AC-OV-050,FC-HDDM-FB-030,,,,,"Mar 9, 2025","May 22, 2025",,,,,74,,,,,Pune,2025-03,3,2,1
+261479,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Dec 17, 2024",,,,,,,,,,,Tirupati,2024-12,12,1,0
+261962,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Oct 31, 2025",,,,,,,,,,,Palghar,2025-10,10,1,0
+262548,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Apr 28, 2025",,,,,,,,,,,New Delhi,2025-04,4,1,0
+262782,Face Malai,,,,,,"Honey Multi-Nut (Dry & Peeling Skin) Face Malai, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-DM-DP-030, FC-DM-NR-030",,,,,,"Jun 5, 2024",,,,,,,,,,,Gurgaon,2024-06,6,1,0
+264236,Aloe Vera Gel,Face Malai,Aloe Vera Gel,,,,Aloe Vera Gel - 40 gms,Flax Walnut (Cold) 35+ Face Malai,Aloe Vera Gel - 80 gms,,,,FC-HG-PA-040,FC-CWDM-FW-030,FC-HG-PA-080,,,,"May 19, 2024","Oct 12, 2024","Dec 28, 2025",,,,146,442,,,,Kota,2024-05,5,3,1
+264742,Face Malai,Face Malai,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,FC-DM-AA-030,FC-DM-PG-030,,,,,"May 1, 2024","May 22, 2024",,,,,21,,,,,Bengaluru,2024-05,5,2,1
+264997,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 31, 2025",,,,,,,,,,,Aligarh,2025-05,5,1,0
+265326,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 6, 2024",,,,,,,,,,,Gurgaon,2024-05,5,1,0
+266071,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Mar 5, 2025",,,,,,,,,,,Gautam Buddha Nagar,2025-03,3,1,0
+266174,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,,FC-DM-PG-050,,,,,,"Mar 5, 2025",,,,,,,,,,,Mumbai,2025-03,3,1,0
+267002,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Apr 26, 2025",,,,,,,,,,,Bengaluru,2025-04,4,1,0
+267752,Active Gel,,,,,,Active Orange Kiwi Vit-C Gel,,,,,,FC-AC-OK-050,,,,,,"Mar 28, 2025",,,,,,,,,,,Jaipur,2025-03,3,1,0
+268081,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 50g,,,,,,FC-HDDM-FB-050,,,,,,"Mar 4, 2026",,,,,,,,,,,New Delhi,2026-03,3,1,0
+268330,Face Malai,Face Malai,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,FC-DM-NR-030,FC-DM-NR-030,,,,,"Jul 22, 2024","Dec 18, 2025",,,,,514,,,,,Gurgaon,2024-07,7,2,1
+268869,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Dec 17, 2024",,,,,,,,,,,Singhbhum,2024-12,12,1,0
+269311,"Aloe Vera Gel, Face Malai",Face Malai,,,,,"Aloe Vera Gel - 40 gms, Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g",Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,"FC-HG-PA-040, FC-HDDM-FB-030",FC-HHDM-FC-030,,,,,"May 8, 2024","Jul 28, 2024",,,,,81,,,,,Faridabad,2024-05,5,2,1
+270826,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Mar 25, 2025",,,,,,,,,,,Bengaluru,2025-03,3,1,0
+270979,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 5, 2024",,,,,,,,,,,Pollachi,2024-05,5,1,0
+271439,Face Malai,,,,,,"Flax Walnut (Cold) 35+ Face Malai, Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai, Turmeric Nutmeg (Pigmentation)  Face Malai - 30g",,,,,,"FC-CWDM-TP-030, FC-CWDM-FW-030, FC-DM-PG-030",,,,,,"Jan 17, 2024",,,,,,,,,,,Thane,2024-01,1,1,0
+271959,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Dec 6, 2024",,,,,,,,,,,Gautam Buddha Nagar,2024-12,12,1,0
+271979,Active Gel,Face Malai,,,,,Active Orange Kiwi Vit-C Gel,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,FC-AC-OK-050,FC-DM-AA-030,,,,,"Jul 23, 2024","Mar 24, 2025",,,,,244,,,,,Gautam Buddha Nagar,2024-07,7,2,1
+272260,Aloe Vera Gel,Active Gel,,,,,Aloe Vera Gel - 40 gms,Active Beetroot Tomato Vit-A Gel,,,,,FC-HG-PA-040,FC-AC-BT-050,,,,,"May 29, 2024","Jan 19, 2025",,,,,235,,,,,Kurukshetra,2024-05,5,2,1
+272275,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"Jun 7, 2025",,,,,,,,,,,Pune,2025-06,6,1,0
+273393,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 16, 2025",,,,,,,,,,,Visakhapatnam,2025-11,11,1,0
+273424,Face Malai,,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,,FC-DM-DP-030,,,,,,"Dec 3, 2025",,,,,,,,,,,Navi Mumbai,2025-12,12,1,0
+273568,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 50g,,,,,,FC-DM-NR-050,,,,,,"Aug 15, 2025",,,,,,,,,,,Tambaram,2025-08,8,1,0
+274166,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Dec 8, 2024",,,,,,,,,,,Meerut,2024-12,12,1,0
+274524,Face Malai,Active Gel,Face Malai,Aloe Vera Gel,,,Flax Walnut (Cold) 35+ Face Malai,Active Olive Vit-E Night Gel,Flax Walnut (Cold) 35+ Face Malai,Aloe Vera Gel - 40 gms,,,FC-CWDM-FW-030,FC-AC-OV-050,FC-CWDM-FW-030,FC-HG-PA-040,,,"Feb 12, 2024","Aug 4, 2024","Aug 4, 2024","Jan 7, 2025",,,174,0,156,,,Irinjalakuda,2024-02,2,4,1
+274975,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Jun 26, 2024",,,,,,,,,,,Kolkata,2024-06,6,1,0
+275175,Face Malai,,,,,,"Flax Carrot (Hot Humid) 35+ Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",,,,,,"FC-DM-NR-030, FC-HHDM-FC-030",,,,,,"Jul 11, 2025",,,,,,,,,,,Coimbatore,2025-07,7,1,0
+275353,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"Aug 11, 2024",,,,,,,,,,,Tirupattur,2024-08,8,1,0
+275494,Face Malai,,,,,,Tomato Patchouli (Cold) 20 - 35 Yrs Face Malai,,,,,,FC-CWDM-TP-030,,,,,,"Jan 3, 2024",,,,,,,,,,,Nagpur,2024-01,1,1,0
+275721,Aloe Vera Gel,,,,,,Aloe Vera Gel - 80 gms,,,,,,FC-HG-PA-080,,,,,,"May 20, 2026",,,,,,,,,,,Shahdol,2026-05,5,1,0
+275761,Face Malai,,,,,,Flax Walnut (Cold) 35+ Face Malai,,,,,,FC-CWDM-FW-030,,,,,,"Nov 13, 2024",,,,,,,,,,,Hyderabad,2024-11,11,1,0
+275951,Face Malai,,,,,,Cocoa Mogra (Overnight) Face Malai - 30g,,,,,,FC-DM-NR-030,,,,,,"Jul 27, 2024",,,,,,,,,,,Visakhapatnam,2024-07,7,1,0
+276338,Face Malai,,,,,,Clove Tea-Tree (Anti-Acne) Face Malai,,,,,,FC-DM-AA-030,,,,,,"Apr 25, 2026",,,,,,,,,,,Bengaluru,2026-04,4,1,0
+276497,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"May 28, 2024",,,,,,,,,,,Dehradun,2024-05,5,1,0
+276753,Face Malai,Face Malai,,,,,"Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g, Cocoa Mogra (Overnight) Face Malai - 30g",Tomato Rosehip (Hot Dry) 20 - 35 Yrs Face Malai - 30g,,,,,"FC-HDDM-TR-030, FC-DM-NR-030",FC-HDDM-TR-030,,,,,"Mar 22, 2025","Oct 13, 2025",,,,,205,,,,,Bengaluru,2025-03,3,2,1
+276903,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Feb 10, 2024",,,,,,,,,,,Gurgaon,2024-02,2,1,0
+277171,Face Malai,,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,,FC-DM-DP-030,,,,,,"Dec 18, 2025",,,,,,,,,,,Pune,2025-12,12,1,0
+277294,Face Malai,,,,,,Flax Bakuchi (Hot Dry) 35+ Face Malai - 30g,,,,,,FC-HDDM-FB-030,,,,,,"Oct 9, 2024",,,,,,,,,,,Gurgaon,2024-10,10,1,0
+278697,Face Malai,,,,,,Flax Carrot (Hot Humid) 35+ Face Malai - 30g,,,,,,FC-HHDM-FC-030,,,,,,"May 1, 2024",,,,,,,,,,,Mumbai,2024-05,5,1,0
+278991,"Active Gel, Face Malai",,,,,,"Turmeric Nutmeg (Pigmentation)  Face Malai - 50g , Active Orange Kiwi Vit-C Gel",,,,,,"FC-DM-PG-050, FC-AC-OK-050",,,,,,"Aug 2, 2024",,,,,,,,,,,Sangrur,2024-08,8,1,0
+279663,Aloe Vera Gel,,,,,,Aloe Vera Gel - 40 gms,,,,,,FC-HG-PA-040,,,,,,"Sep 1, 2024",,,,,,,,,,,Mumbai,2024-09,9,1,0
+279886,Face Malai,,,,,,Turmeric Nutmeg (Pigmentation)  Face Malai - 30g,,,,,,FC-DM-PG-030,,,,,,"Apr 13, 2025",,,,,,,,,,,New Delhi,2025-04,4,1,0
+280672,Face Malai,Face Malai,,,,,Flax Walnut (Cold) 35+ Face Malai,Turmeric Nutmeg (Pigmentation)  Face Malai - 50g,,,,,FC-CWDM-FW-030,FC-DM-PG-050,,,,,"Jan 7, 2024","May 27, 2024",,,,,141,,,,,Mumbai,2024-01,1,2,1
+281559,Face Malai,,,,,,Honey Multi-Nut (Dry & Peeling Skin) Face Malai,,,,,,FC-DM-DP-030,,,,,,"Oct 8, 2025",,,,,,,,,,,New Delhi,2025-10,10,1,0
+</script>
+
+<script id="core">
+"use strict";
+/* ---------------- CSV parser (quote-aware) ---------------- */
+function parseCSV(text){
+  const rows=[]; let row=[], field="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else q=false; } else field+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(field); field=""; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n')i++; row.push(field); rows.push(row); row=[]; field=""; }
+    else field+=c;
+  }
+  if(field!==""||row.length){ row.push(field); rows.push(row); }
+  if(rows.length&&rows[rows.length-1].length===1&&rows[rows.length-1][0]==="") rows.pop();
+  return rows;
+}
+/* ---------------- decoders ---------------- */
+const LINE_MAP={CWDM:["Face Malai","Cold Winter"],HDDM:["Face Malai","Hot Dry"],HHDM:["Face Malai","Hot Humid"],DM:["Face Malai","Non-Seasonal"],AC:["Active Gel","Gel"],HG:["Aloe Vera Gel","Gel"]};
+const VAR_MAP={"CWDM-FW":"Flax Walnut","CWDM-TP":"Tomato Patchouli","CWDM-BT":"Winter Blackseed",
+"HDDM-FB":"Flax Bakuchi","HDDM-TR":"Tomato Rosehip","HDDM-PT":"Pomegranate Tulsi",
+"HHDM-FC":"Flax Carrot","HHDM-TV":"Tomato Vetiver","HHDM-GAT":"GreenApple Tulsi",
+"DM-PG":"Turmeric Nutmeg","DM-NR":"Cocoa Mogra","DM-DP":"Honey Multi-Nut","DM-AA":"Clove Tea-Tree",
+"AC-NT":"Neem TeaTree","AC-AC":"Aloe Cactus Hydra Lift","AC-OV":"Olive Vit-E Night","AC-OK":"Orange Kiwi Vit-C","AC-BT":"Beetroot Tomato Vit-A","HG-PA":"Aloe Vera"};
+const REGIONS={"new delhi":"North","delhi":"North","gurgaon":"North","gurugram":"North","noida":"North","gautam buddha nagar":"North","ghaziabad":"North","faridabad":"North","jaipur":"North","lucknow":"North","kanpur":"North","chandigarh":"North","dehradun":"North","varanasi":"North","prayagraj":"North","agra":"North","meerut":"North","jodhpur":"North","udaipur":"North","kota":"North","bhopal":"North","indore":"North",
+"mumbai":"West","thane":"West","navi mumbai":"West","pune":"West","nashik":"West","nagpur":"West","ahmedabad":"West","surat":"West","vadodara":"West","rajkot":"West",
+"bengaluru":"South","bangalore":"South","mysuru":"South","mysore":"South","mangaluru":"South","mangalore":"South","chennai":"South","coimbatore":"South","madurai":"South","hyderabad":"South","secunderabad":"South","visakhapatnam":"South","vizag":"South","vijayawada":"South","kochi":"South","ernakulam":"South","kozhikode":"South","thiruvananthapuram":"South","thrissur":"South","kollam":"South","palakkad":"South","kannur":"South","kottayam":"South","irinjalakuda":"South","pollachi":"South",
+"kolkata":"East","howrah":"East","bhubaneswar":"East","patna":"East","ranchi":"East","jamshedpur":"East","guwahati":"East","siliguri":"East"};
+const M3={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function regionOf(city){ if(!city) return "Unknown"; return REGIONS[city.toLowerCase().trim()]||"Rest of India"; }
+function decodeCode(tok){
+  const m=/^FC-([A-Z]+)-([A-Z0-9]+)-(\d{3})$/.exec(tok.toUpperCase().trim());
+  if(!m) return null;
+  const line=LINE_MAP[m[1]], varr=VAR_MAP[m[1]+"-"+m[2]];
+  if(!line||!varr) return null;
+  const size=+m[3], cat=line[0], intent=line[1];
+  const skuKey=cat==="Aloe Vera Gel"?("Aloe Vera Gel "+size+"g"):(varr+" "+size+"g");
+  return {cat,var:varr,size,skuKey,intent};
+}
+function decodeName(tok){
+  const t=tok.toLowerCase(); let varr=null,intent=null,cat=null;
+  const P=[["turmeric nutmeg","Turmeric Nutmeg","DM"],["cocoa mogra","Cocoa Mogra","DM"],["honey multi-nut","Honey Multi-Nut","DM"],["clove tea-tree","Clove Tea-Tree","DM"],
+  ["flax walnut","Flax Walnut","CWDM"],["tomato patchouli","Tomato Patchouli","CWDM"],["winter blackseed","Winter Blackseed","CWDM"],
+  ["flax bakuchi","Flax Bakuchi","HDDM"],["tomato rosehip","Tomato Rosehip","HDDM"],["pomegranate tulsi","Pomegranate Tulsi","HDDM"],
+  ["flax carrot","Flax Carrot","HHDM"],["tomato vetiver","Tomato Vetiver","HHDM"],["greenapple tulsi","GreenApple Tulsi","HHDM"],
+  ["neem teatree","Neem TeaTree","AC"],["aloe cactus","Aloe Cactus Hydra Lift","AC"],["olive vit-e","Olive Vit-E Night","AC"],["beetroot tomato","Beetroot Tomato Vit-A","AC"],["orange kiwi","Orange Kiwi Vit-C","AC"]];
+  for(const [k,v,l] of P){ if(t.includes(k)){ varr=v; const L=LINE_MAP[l]; cat=L[0]; intent=L[1]; break; } }
+  if(!varr){ if(t.includes("aloe vera gel")){ varr="Aloe Vera"; cat="Aloe Vera Gel"; intent="Gel"; } else return null; }
+  let size=cat==="Aloe Vera Gel"&&t.includes("80")?80:(cat==="Aloe Vera Gel"?40:50);
+  const g=/(\d{2})\s*g/.exec(t); if(g) size=+g[1];
+  const skuKey=cat==="Aloe Vera Gel"?("Aloe Vera Gel "+size+"g"):(varr+" "+size+"g");
+  return {cat,var:varr,size,skuKey,intent};
+}
+function parseItems(codeCell,nameCell){
+  const out=[];
+  if(codeCell){ for(const tok of codeCell.split(",")){ const d=decodeCode(tok); if(d) out.push(d); } }
+  if(!out.length&&nameCell){ for(const tok of nameCell.split(",")){ const d=decodeName(tok); if(d) out.push(d); } }
+  return out;
+}
+function parseDateStr(s){
+  if(!s) return null;
+  s=String(s).trim();
+  let m=/^([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{4})$/.exec(s);
+  if(m&&M3[m[1].toLowerCase()]!==undefined) return new Date(+m[3],M3[m[1].toLowerCase()],+m[2]);
+  m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  const d=new Date(s); return isNaN(d)?null:d;
+}
+function timingSeason(mon){ return mon===11||mon===0||mon===1?"Cold Winter":mon>=9?"Post-Monsoon":mon>=5?"Hot Humid":mon>=2?"Hot Dry":"Cold Winter"; }
+/* mon is JS month 0-11: Dec(11),Jan(0),Feb(1)=CW; Mar-May=HD; Jun-Sep=HH; Oct-Nov=PM */
+
+/* ---------------- model builder (journey-wide CSV) ---------------- */
+const SLOTS=["first","second","third","fourth","fifth","sixth"];
+function buildModel(csvText){
+  const rows=parseCSV(csvText);
+  const H=rows[0].map(h=>h.trim());
+  const idx={}; H.forEach((h,i)=>idx[h]=i);
+  const customers=[]; const catSet=new Set(), skuSet=new Set(), monthSet=new Set(), regionSet=new Set();
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r]; const get=k=>{const i=idx[k];return i===undefined?"":(row[i]||"");};
+    const name=get("Name"); if(name==="") continue;
+    const city=(get("city")||"").trim(), region=regionOf(city);
+    const orders=[];
+    for(const s of SLOTS){
+      const date=parseDateStr(get(s+"_order_date")); if(!date) continue;
+      const items=parseItems(get(s+"_purchased_sku"),get(s+"_purchased_short_code")); if(!items.length) continue;
+      orders.push({date,month:date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0"),tSeason:timingSeason(date.getMonth()),items});
+      items.forEach(it=>{catSet.add(it.cat);skuSet.add(it.skuKey);});
+    }
+    if(!orders.length) continue;
+    const depth=+get("Journey Depth")||orders.length;
+    const entryMonth=(get("Month-Year")||orders[0].month).trim();
+    monthSet.add(entryMonth);
+    regionSet.add(region);
+    customers.push({id:String(name),city,region,entryMonth,depth,orders});
+  }
+  return {customers,cats:[...catSet].sort(),skus:[...skuSet].sort(),
+          months:[...monthSet].sort(),regions:[...regionSet].sort()};
+}
+/* ---------------- cohort filter + metrics ---------------- */
+function cohortSet(model,f){
+  const set=new Set();
+  for(const c of model.customers){
+    const e=c.orders[0].items;
+    if(f.category!=="All"&&!e.some(i=>i.cat===f.category)) continue;
+    if(f.sku!=="All"&&!e.some(i=>i.skuKey===f.sku)) continue;
+    if(f.from!=="All"&&c.entryMonth<f.from) continue;
+    if(f.to!=="All"&&c.entryMonth>f.to) continue;
+    if(f.depth!=="All"&&c.depth!==+f.depth) continue;
+    if(f.region!=="All"&&c.region!==f.region) continue;
+    set.add(c.id);
+  }
+  return set;
+}
+function computeAll(model,f){
+  const inC=cohortSet(model,f);
+  let orders=0,repeat=0;
+  const seas={CW:0,HD:0,HH:0,NS:0}, timing={CW:0,HD:0,HH:0,PM:0}, catOrders={"Face Malai":0,"Active Gel":0,"Aloe Vera Gel":0};
+  const monthCounts={};
+  let base=0,v2v=0,v2c=0,daysV2V=[],daysV2C=[],ordV2V=[],ordV2C=[];
+  const commonV2V={},commonV2C={};
+  const en=[]; // entry->next primary pairs for conclusions
+  for(const c of model.customers){
+    if(!inC.has(c.id)) continue;
+    orders+=c.depth; if(c.depth>=2) repeat++;
+    for(const o of c.orders){
+      const seenCat=new Set(),seenInt=new Set();
+      for(const it of o.items){
+        if(!seenInt.has(it.intent)){ seenInt.add(it.intent);
+          if(it.intent==="Cold Winter")seas.CW++; else if(it.intent==="Hot Dry")seas.HD++;
+          else if(it.intent==="Hot Humid")seas.HH++; else if(it.intent==="Non-Seasonal")seas.NS++; }
+        if(!seenCat.has(it.cat)){ seenCat.add(it.cat); catOrders[it.cat]=(catOrders[it.cat]||0)+1; }
+      }
+      timing[o.tSeason==="Cold Winter"?"CW":o.tSeason==="Hot Dry"?"HD":o.tSeason==="Hot Humid"?"HH":"PM"]++;
+      monthCounts[o.month]=(monthCounts[o.month]||0)+1;
+    }
+    if(c.orders.length>=2){
+      base++;
+      const e=c.orders[0].items, n=c.orders[1].items;
+      const gap=Math.round((c.orders[1].date-c.orders[0].date)/86400000);
+      if(n.some(x=>e.some(y=>y.var===x.var))){ v2v++; daysV2V.push(gap); ordV2V.push(c.depth);
+        for(const it of n) commonV2V[it.skuKey]=(commonV2V[it.skuKey]||0)+1; }
+      if(n.some(x=>e.some(y=>y.cat===x.cat))){ v2c++; daysV2C.push(gap); ordV2C.push(c.depth);
+        for(const it of n) commonV2C[it.skuKey]=(commonV2C[it.skuKey]||0)+1; }
+      en.push({e:e[0],n:n[0]});
+    }
+  }
+  const mean=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*10)/10:null;
+  const mode=o=>{let best=null,bn=0;for(const k in o)if(o[k]>bn){bn=o[k];best=k;}return best;};
+  const peakEntries=[["Cold Winter",seas.CW],["Hot Dry",seas.HD],["Hot Humid",seas.HH],["Non-Seasonal",seas.NS]].sort((a,b)=>b[1]-a[1]);
+  return {customers:inC.size,orders,repeat,
+    repeatRate:inC.size?+(100*repeat/inC.size).toFixed(1):0,
+    seas,peak:peakEntries[0][1]?peakEntries[0][0]:"—",timing,catOrders,monthCounts,
+    loy:{base,v2vPct:base?+(100*v2v/base).toFixed(1):0,v2cPct:base?+(100*v2c/base).toFixed(1):0,
+         daysV2V:mean(daysV2V),daysV2C:mean(daysV2C),ordV2V:ordV2V.length?+(ordV2V.reduce((a,b)=>a+b,0)/ordV2V.length).toFixed(2):null,
+         ordV2C:ordV2C.length?+(ordV2C.reduce((a,b)=>a+b,0)/ordV2C.length).toFixed(2):null,
+         commonV2V:mode(commonV2V),commonV2C:mode(commonV2C)},en};
+}
+/* ---------------- conclusions (formula-driven) ---------------- */
+function conclusions(model,f){
+  const m=computeAll(model,f), en=m.en;
+  const n=(x)=>x.toLocaleString("en-US"), p=(x)=>x+"%";
+  // 1 seasonality — primary-item per order (same as the app)
+  const vstat={};
+  const inC=cohortSet(model,f);
+  for(const c of model.customers){
+    if(!inC.has(c.id)) continue;
+    for(const o of c.orders){ const it=o.items[0]; if(!it) continue;
+      const s=vstat[it.var]=vstat[it.var]||{CW:0,HD:0,HH:0,PM:0,total:0,intent:it.intent};
+      s[o.tSeason==="Cold Winter"?"CW":o.tSeason==="Hot Dry"?"HD":o.tSeason==="Hot Humid"?"HH":"PM"]++; s.total++; }
+  }
+  let nHigh=0,nEver=0,nFm=0;
+  for(const v in vstat){ const s=vstat[v];
+    if(s.intent==="Gel") continue; nFm++;
+    if(s.intent==="Non-Seasonal"){ nEver++; continue; }
+    const share=Math.max(s.CW,s.HD,s.HH,s.PM)/s.total;
+    if(share>=0.4) nHigh++; else if(share<0.3) nEver++; }
+  let q1;
+  if(nHigh===0&&nEver>0) q1="NO — Mostly evergreen with "+nEver+" evergreen variants";
+  else if(nHigh>=nEver&&nHigh>0) q1="YES — "+nHigh+" of "+nFm+" Face Malai variants are highly seasonal";
+  else q1="MIXED — "+nHigh+" highly seasonal vs "+nEver+" evergreen variants";
+  // 2..6 from entry->next primary pairs
+  const tot=en.length, rep=tot?en.filter(x=>x.e.skuKey===x.n.skuKey).length:0;
+  const rp=tot?100*rep/tot:0;
+  const verdict=rp>=60?"STRONG":rp>=45?"MODERATE":"WEAK";
+  const fm30=en.filter(x=>x.e.cat==="Face Malai"&&x.e.size===30);
+  const n30=fm30.length, toFm50=fm30.filter(x=>x.n.cat==="Face Malai"&&x.n.size===50).length,
+        toAg50=fm30.filter(x=>x.n.cat==="Active Gel"&&x.n.size===50).length;
+  const fm50=en.filter(x=>x.e.cat==="Face Malai"&&x.e.size===50);
+  const ag50=en.filter(x=>x.e.cat==="Active Gel"&&x.e.size===50);
+  const dFm50=fm50.filter(x=>x.n.cat==="Face Malai"&&x.n.size===30).length;
+  const dAg50=ag50.filter(x=>x.n.cat==="Face Malai"&&x.n.size===30).length;
+  const p1=fm50.length?100*dFm50/fm50.length:0, p2=ag50.length?100*dAg50/ag50.length:0;
+  const pf=n30?Math.round(100*toFm50/n30):0, pa=n30?Math.round(100*toAg50/n30):0;
+  const res=[
+   {q:"Is Face Malai Seasonal?",a:q1},
+   {q:"Overall Repeat Behaviour",a:tot?Math.round(rp)+"% of all face moisturiser transitions are same product repeats ("+n(rep)+" of "+n(tot)+" transitions). "+verdict+" — switching behaviour exists across sizes and formats.":"—"},
+   {q:"30g → 50g Conversion (FM Only)",a:n30?("Out of "+n(n30)+" FM 30g transitions — "+n(toFm50)+" ("+p(pf)+") moved to FM 50g. "+(toFm50>=toAg50?"This is the primary internal upsize path.":"Secondary — the cross-category gel switch is bigger.")):"No FM 30g transitions in the current selection."},
+   {q:"30g → Active Gel (Cross-Category Upsize)",a:n30?("Out of "+n(n30)+" FM 30g transitions — "+n(toAg50)+" ("+p(pa)+") moved to Active Gel 50g. "+(toAg50>toFm50?"More 30g buyers move to Active Gel than FM 50g — gel format has stronger pull than size upgrade within FM.":"FM 50g currently converts better than the gel switch.")):"No FM 30g transitions in the current selection."},
+   {q:"Downsize Risk Assessment",a:"DOWNSIZE ALERT: "+Math.round(p1)+"% of FM 50g buyers drop to 30g ("+n(dFm50)+" transitions). AND "+Math.round(p2)+"% of Active Gel buyers also drop to FM 30g ("+n(dAg50)+" transitions). "+((p1>=20||p2>=20)?"Portfolio-wide downsize pressure detected.":"Downsize pressure within tolerance.")},
+   {q:"Key Business Recommendation",a:(toAg50>toFm50&&n30)?"FOCUS: 30g buyers prefer switching to Active Gel over FM 50g. Bundle strategy: FM 30g + Active Gel 50g trial kit could accelerate this natural behaviour.":"FOCUS: strengthen the FM 30g → FM 50g upsize path ("+pf+"% today). Consider 50g refill pricing or a size-up nudge at reorder."}
+  ];
+
+  // ---- extended dynamic conclusions (7-12) ----
+  let users=0, once=0; const vg={};
+  for(const c of model.customers){
+    if(!inC.has(c.id)) continue;
+    const it0=c.orders[0].items[0]; if(!it0) continue;
+    users++; const rep=c.depth>=2;
+    if(!rep) once++;
+    const s=vg[it0.var]=vg[it0.var]||{n:0,rep:0}; s.n++; if(rep)s.rep++;
+  }
+  if(users){
+    const arr=Object.entries(vg).filter(e=>e[1].n>=10)
+      .sort((a,b)=>(b[1].rep/b[1].n)-(a[1].rep/a[1].n));
+    let a7="RETENTION: "+Math.round(100*once/users)+"% of entry customers never reorder ("+n(once)+" of "+n(users)+").";
+    if(arr.length>=2){
+      const B=arr[0],W=arr[arr.length-1];
+      a7+=" Best repeat: "+B[0]+" ("+Math.round(100*B[1].rep/B[1].n)+"%) · Worst: "+W[0]+" ("+Math.round(100*W[1].rep/W[1].n)+"%). Prioritise win-back for "+W[0]+".";
+    }
+    res.push({q:"Customer Retention & Drop-Off",a:a7});
+  }
+  const gaps=[];
+  for(const c of model.customers){
+    if(!inC.has(c.id)||c.orders.length<2) continue;
+    gaps.push(Math.round((c.orders[1].date-c.orders[0].date)/86400000));
+  }
+  if(gaps.length){
+    gaps.sort((a,b)=>a-b);
+    const k=gaps.length>>1;
+    const med=gaps.length%2?gaps[k]:Math.round((gaps[k-1]+gaps[k])/2);
+    const avg=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
+    res.push({q:"Reorder Cadence (Replenishment)",a:"REPLENISHMENT: typical reorder gap is "+med+" days (median) · "+avg+" days (average). Trigger reorder nudges around day "+Math.max(0,med-15)+" — two weeks before the jar runs out."});
+  }
+  const TB={CW:"Cold Winter (Dec-Feb)",HD:"Hot Dry (Mar-May)",HH:"Hot Humid (Jun-Sep)",PM:"Post-Monsoon (Oct-Nov)"};
+  const tc={CW:0,HD:0,HH:0,PM:0}; let totOrd=0;
+  for(const c of model.customers){
+    if(!inC.has(c.id)) continue;
+    for(const o of c.orders){ totOrd++; tc[o.tSeason==="Cold Winter"?"CW":o.tSeason==="Hot Dry"?"HD":o.tSeason==="Hot Humid"?"HH":"PM"]++; }
+  }
+  if(totOrd){
+    const topB=Object.entries(tc).sort((a,b)=>b[1]-a[1])[0];
+    res.push({q:"Demand Peak (Purchase Timing)",a:"DEMAND PEAK: "+Math.round(100*topB[1]/totOrd)+"% of orders occur in "+TB[topB[0]]+" ("+n(topB[1])+" of "+n(totOrd)+" orders) — the calendar window to weight stock and campaigns."});
+  }
+  if(en.length){
+    const nets={};
+    for(const cat of ["Face Malai","Active Gel","Aloe Vera Gel"]){
+      const inflow=en.filter(x=>x.n.cat===cat&&x.e.cat!==cat).length;
+      const outflow=en.filter(x=>x.e.cat===cat&&x.n.cat!==cat).length;
+      nets[cat]=inflow-outflow;
+    }
+    const nz=Object.entries(nets).filter(e=>e[1]!==0);
+    if(nz.length){
+      nz.sort((a,b)=>b[1]-a[1]);
+      const win=nz[0], lose=nz[nz.length-1];
+      res.push({q:"Category Gravity (Net Migration)",a:"CATEGORY GRAVITY: "+win[0]+" gains "+Math.abs(win[1])+" net repeat-customers; "+lose[0]+" loses "+Math.abs(lose[1])+". Align cross-sell with the natural pull."});
+    }
+    const sg={};
+    for(const x of en){ const s=sg[x.e.var]=sg[x.e.var]||{n:0,hit:0}; s.n++; if(x.n.var===x.e.var)s.hit++; }
+    const sArr=Object.entries(sg).filter(e=>e[1].n>=10).sort((a,b)=>(b[1].hit/b[1].n)-(a[1].hit/a[1].n));
+    if(sArr.length){
+      const V=sArr[0];
+      res.push({q:"Stickiest Variant (V2V Leader)",a:"STICKIEST VARIANT: "+V[0]+" — "+Math.round(100*V[1].hit/V[1].n)+"% of its repeat-path buyers re-buy the same variant. Anchor bundles and subscriptions around it."});
+    }
+    const pw={};
+    for(const x of en){ if(x.e.skuKey===x.n.skuKey) continue;
+      const k=x.e.skuKey+"→"+x.n.skuKey; pw[k]=pw[k]||{a:x.e.skuKey,b:x.n.skuKey,n:0}; pw[k].n++; }
+    const pArr=Object.values(pw).sort((a,b)=>b.n-a.n);
+    if(pArr.length){
+      const P=pArr[0], denom=en.filter(x=>x.e.skuKey===P.a).length;
+      res.push({q:"Top Natural Switch Pair",a:"TOP SWITCH: "+P.a+" → "+P.b+": "+P.n+" customers"+(denom?" ("+Math.round(100*P.n/denom)+"% of "+P.a+"'s next purchases)":"")+" — the portfolio's strongest natural migration path."});
+    }
+  }
+  return res;
+}
+/* ---------------- variant summary (primary-item) ---------------- */
+function variantSummary(model,f){
+  const inC=cohortSet(model,f); const vstat={}; const depthAgg={};
+  for(const c of model.customers){ if(!inC.has(c.id)) continue;
+    for(let i=0;i<c.orders.length;i++){ const o=c.orders[i], it=o.items[0]; if(!it) continue;
+      const k=o.tSeason==="Cold Winter"?"CW":o.tSeason==="Hot Dry"?"HD":o.tSeason==="Hot Humid"?"HH":"PM";
+      const s=vstat[it.var]=vstat[it.var]||{CW:0,HD:0,HH:0,PM:0,total:0,intent:it.intent,cat:it.cat,entry:0,once:0};
+      s[k]++; s.total++;
+      if(i===0){ s.entry++; if(c.depth===1) s.once++; }
+    }
+    if(c.orders.length>=2){ const g=Math.round((c.orders[1].date-c.orders[0].date)/86400000);
+      const v=c.orders[0].items[0]?c.orders[0].items[0].var:null;
+      if(v){ const d=depthAgg[v]=depthAgg[v]||[]; d.push(g); } }
+  }
+  const rows=[];
+  for(const v in vstat){ const s=vstat[v];
+    const peakVals=[["Cold Winter",s.CW],["Hot Dry",s.HD],["Hot Humid",s.HH],["Post-Monsoon",s.PM]];
+    const peak=peakVals.sort((a,b)=>b[1]-a[1])[0];
+    const share=s.total?peak[1]/s.total:0;
+    const isGel=s.intent==="Gel", isNs=s.intent==="Non-Seasonal";
+    const match=isGel||isNs?"—":(peak[0]===s.intent?"Matches":"No Match");
+    const strength=match==="—"?(isGel?"—":"Evergreen"):(share>=.4?"Highly Seasonal":share>=.3?"Moderately Seasonal":"Evergreen");
+    const g=depthAgg[v], avgGap=g&&g.length?Math.round(g.reduce((a,b)=>a+b,0)/g.length):null;
+    rows.push({variant:v,cat:s.cat,CW:s.CW,HD:s.HD,HH:s.HH,PM:s.PM,total:s.total,
+      peak:s.total?peak[0]:"—",share:s.total?Math.round(share*1000)/10:0,intent:isGel?"Gel":isNs?"Non-Seasonal":s.intent,
+      match,strength,entry:s.entry,once:s.once,repRate:s.entry?Math.round((1-s.once/s.entry)*1000)/10:0,avgGap});
+  }
+  rows.sort((a,b)=>b.total-a.total);
+  return rows;
+}
+if(typeof module!=="undefined") module.exports={parseCSV,decodeCode,decodeName,parseItems,parseDateStr,timingSeason,regionOf,buildModel,cohortSet,computeAll,conclusions,variantSummary};
+</script>
+
+<script id="ui">
+/* ---------------- UI wiring ---------------- */
+const $=id=>document.getElementById(id);
+let MODEL=null, FILTERS=null, PAGE=1;
+
+function fillSelect(sel,opts,val){ sel.innerHTML=""; for(const o of opts){ const op=document.createElement("option"); op.value=o; op.textContent=o; if(o===val)op.selected=true; sel.appendChild(op);} }
+function initFilters(){
+  const m=MODEL;
+  fillSelect($("f_cat"),["All",...m.cats],"All");
+  fillSelect($("f_sku"),["All",...m.skus],"All");
+  fillSelect($("f_from"),["All",...m.months],"All");
+  fillSelect($("f_to"),["All",...m.months],"All");
+  fillSelect($("f_depth"),["All","1","2","3","4","5","6"],"All");
+  fillSelect($("f_region"),["All",...m.regions],"All");
+}
+function getFilters(){ return {category:$("f_cat").value,sku:$("f_sku").value,from:$("f_from").value,
+  to:$("f_to").value,depth:$("f_depth").value,region:$("f_region").value}; }
+function tileHTML(l,v,cls){ return '<div class="tile '+(cls||"")+'"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
+function render(){
+  const f=getFilters();
+  const m=computeAll(MODEL,f);
+  $("kpis").innerHTML=
+    tileHTML("Customers in cohort",m.customers.toLocaleString())+
+    tileHTML("Total orders",m.orders.toLocaleString())+
+    tileHTML("Repeat buyers",m.repeat.toLocaleString())+
+    tileHTML("Repeat rate",m.repeatRate+"%");
+  $("seasTiles").innerHTML=
+    tileHTML("Cold Winter (Dec–Feb) variants",m.seas.CW.toLocaleString())+
+    tileHTML("Hot Dry (Mar–May) variants",m.seas.HD.toLocaleString())+
+    tileHTML("Hot Humid (Jun–Sep) variants",m.seas.HH.toLocaleString())+
+    tileHTML("Non-Seasonal / Concern variants",m.seas.NS.toLocaleString())+
+    tileHTML("Peak Season",m.peak,"peak");
+  $("timingRow").innerHTML="Purchase timing — Cold Winter: <b>"+m.timing.CW.toLocaleString()+
+    "</b> · Hot Dry: <b>"+m.timing.HD.toLocaleString()+"</b> · Hot Humid: <b>"+m.timing.HH.toLocaleString()+
+    "</b> · Post-Monsoon: <b>"+m.timing.PM.toLocaleString()+"</b>";
+  $("gelTiles").innerHTML=
+    tileHTML("Active Gel Count",(m.catOrders["Active Gel"]||0).toLocaleString())+
+    tileHTML("Aloevera Gel Count",(m.catOrders["Aloe Vera Gel"]||0).toLocaleString())+
+    tileHTML("Face Malai Count",(m.catOrders["Face Malai"]||0).toLocaleString())+
+    tileHTML("Total Orders",m.orders.toLocaleString());
+  const L=m.loy;
+  $("loyTiles").innerHTML=
+    tileHTML("V2V Loyalty %",L.v2vPct+"%")+
+    tileHTML("V2C Loyalty %",L.v2cPct+"%")+
+    tileHTML("Avg Purchase Days V2V",L.daysV2V??"—")+
+    tileHTML("Avg Purchase Days V2C",L.daysV2C??"—")+
+    tileHTML("Avg Order Count V2V",L.ordV2V??"—")+
+    tileHTML("Avg Order Count V2C",L.ordV2C??"—");
+  $("loyNote").innerHTML="Repeat customers (2+ orders): <b>"+L.base.toLocaleString()+
+    "</b> · most common 2nd order — V2V: <b>"+(L.commonV2V||"—")+"</b> · V2C: <b>"+(L.commonV2C||"—")+"</b>";
+  $("concl").innerHTML=conclusions(MODEL,f).map(c=>'<div class="cblock"><b>'+c.q+'</b><span>'+c.a+'</span></div>').join("");
+  // variant table
+  const vs=variantSummary(MODEL,f);
+  let h="<tr><th>Variant</th><th class=num>Cold Winter</th><th class=num>Hot Dry</th><th class=num>Hot Humid</th><th class=num>Post-Monsoon</th><th class=num>Total</th><th>Peak</th><th class=num>Peak %</th><th>Intended</th><th>Match</th><th>Strength</th><th class=num>Entry users</th><th class=num>Repeat %</th><th class=num>Avg d 1→2</th></tr>";
+  for(const r of vs) h+="<tr><td>"+r.variant+"</td><td class=num>"+r.CW+"</td><td class=num>"+r.HD+"</td><td class=num>"+r.HH+"</td><td class=num>"+r.PM+"</td><td class=num><b>"+r.total+"</b></td><td>"+r.peak+"</td><td class=num>"+r.share+"%</td><td>"+r.intent+"</td><td>"+r.match+"</td><td>"+r.strength+"</td><td class=num>"+r.entry+"</td><td class=num>"+r.repRate+"%</td><td class=num>"+(r.avgGap??"—")+"</td></tr>";
+  $("varTable").innerHTML=h;
+  drawChart(m.monthCounts);
+  PAGE=1; renderJourneys();
+}
+function drawChart(mc){
+  const months=Object.keys(mc).sort(); if(!months.length){ $("monthChart").innerHTML="<i>no orders</i>"; return; }
+  const W=980,H=220,pad=34,bw=Math.max(4,(W-2*pad)/months.length-3);
+  const max=Math.max(...months.map(k=>mc[k]));
+  let bars="",labels="";
+  months.forEach((k,i)=>{ const h=(mc[k]/max)*(H-52); const x=pad+i*((W-2*pad)/months.length);
+    bars+='<rect x="'+x+'" y="'+(H-30-h)+'" width="'+bw+'" height="'+h+'" rx="2" fill="#3C8C6E"><title>'+k+": "+mc[k]+"</title></rect>";
+    if(months.length<=20||i%3===0) labels+='<text x="'+(x+bw/2)+'" y="'+(H-14)+'" font-size="9" text-anchor="middle" fill="#667">'+k.slice(2)+'</text>'; });
+  $("monthChart").innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto"><text x="'+pad+'" y="16" font-size="12" font-weight="700" fill="#1F4D3F">Orders by month (cohort)</text>'+bars+labels+'</svg>';
+}
+let JROWS=[];
+function renderJourneys(){
+  const f=getFilters(); const inC=cohortSet(MODEL,f);
+  const q=$("q").value.trim().toLowerCase();
+  let list=MODEL.customers.filter(c=>inC.has(c.id));
+  if(q) list=list.filter(c=>(c.id+" "+c.city+" "+c.region+" "+c.orders.map(o=>o.items.map(i=>i.skuKey).join(", ")).join(" ")).toLowerCase().includes(q));
+  JROWS=list;
+  const size=+$("pagesize").value, total=Math.max(1,Math.ceil(list.length/size));
+  PAGE=Math.min(Math.max(1,PAGE),total);
+  let h="<tr><th>Customer</th><th>City</th><th>Region</th><th>Entry month</th><th class=num>Depth</th><th>Repeat?</th><th>Order SKUs (1→6)</th><th>Gaps (days)</th></tr>";
+  for(const c of list.slice((PAGE-1)*size,PAGE*size)){
+    const gaps=c.orders.map((o,i)=>i?Math.round((o.date-c.orders[i-1].date)/86400000):null).filter(x=>x!==null);
+    h+="<tr><td>"+c.id+"</td><td>"+c.city+"</td><td>"+c.region+"</td><td>"+c.entryMonth+"</td><td class=num>"+c.depth+"</td><td>"+(c.depth>=2?"✅":"—")+"</td><td>"+c.orders.map(o=>o.items.map(i=>i.skuKey).join(", ")).join(" → ")+"</td><td>"+gaps.join(", ")+"</td></tr>";
+  }
+  $("jourTable").innerHTML=h;
+  $("pginfo").textContent=list.length.toLocaleString()+" rows · page "+PAGE+" / "+total;
+  $("prev").disabled=PAGE<=1; $("next").disabled=PAGE>=total;
+}
+function exportCSV(){
+  const f=getFilters(); const inC=cohortSet(MODEL,f);
+  const lines=["Customer,City,Region,Entry Month,Journey Depth,Is Repeat,Order 1 SKUs,Order 1 Date,Order 2 SKUs,Order 2 Date,Gap 1-2,Order 3 SKUs,Order 3 Date,Gap 2-3,Order 4 SKUs,Order 4 Date,Order 5 SKUs,Order 5 Date,Order 6 SKUs,Order 6 Date"];
+  const d=d=>d.toISOString().slice(0,10);
+  for(const c of MODEL.customers){ if(!inC.has(c.id)) continue;
+    const cells=[c.id,'"'+c.city+'"',c.region,c.entryMonth,c.depth,c.depth>=2?1:0];
+    for(let i=0;i<6;i++){ const o=c.orders[i];
+      if(o){ cells.push('"'+o.items.map(x=>x.skuKey).join(", ")+'"',d(o.date),i?Math.round((o.date-c.orders[i-1].date)/86400000):""); }
+      else cells.push("","",""); }
+    lines.push(cells.join(",")); }
+  const blob=new Blob([lines.join("\n")],{type:"text/csv"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="filtered_journeys.csv"; a.click();
+}
+function boot(csvText,note){
+  $("busy").style.display="flex";
+  setTimeout(()=>{ MODEL=buildModel(csvText);
+    let tot=0; for(const c of MODEL.customers) tot+=c.depth;
+    $("srcnote").textContent=note+" — "+MODEL.customers.length.toLocaleString()+" customers · "+tot.toLocaleString()+" orders";
+    initFilters(); render(); $("busy").style.display="none"; },30);
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const sample=document.getElementById("sampleCSV").textContent.trim();
+  boot(sample,"Bundled sample");
+  $("csvfile").addEventListener("change",ev=>{
+    const file=ev.target.files[0]; if(!file) return;
+    const r=new FileReader();
+    r.onload=()=>boot(r.result,file.name);
+    r.readAsText(file);
+  });
+  ["f_cat","f_sku","f_from","f_to","f_depth","f_region"].forEach(id=>$(id).addEventListener("change",render));
+  $("reset").addEventListener("click",()=>{ initFilters(); render(); });
+  $("q").addEventListener("input",()=>{PAGE=1;renderJourneys();});
+  $("pagesize").addEventListener("change",()=>{PAGE=1;renderJourneys();});
+  $("prev").addEventListener("click",()=>{PAGE--;renderJourneys();});
+  $("next").addEventListener("click",()=>{PAGE++;renderJourneys();});
+  $("dl").addEventListener("click",exportCSV);
+});
+</script>
+</body>
+</html>
