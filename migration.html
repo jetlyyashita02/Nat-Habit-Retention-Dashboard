@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1 · Migration — Retention &amp; Category Intelligence</title>
+<style>
+
+:root{
+  --bg:#f6f8fa; --card:#fff; --ink:#16232e; --mut:#64748b; --line:#e2e8f0;
+  --acc:#0b6e4f; --accbg:#eef7f2; --red:#c0392b; --grn:#1a7f37; --amber:#d97706; --blue:#3b82f6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:13.5px}
+a{color:var(--acc)}
+.site{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;background:#fff;padding:12px 26px;border-bottom:1px solid var(--line)}
+.site .brand{font-size:15.5px}
+.site .meta{font-size:11px;color:var(--mut);display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.chip{font-size:10.5px;background:var(--accbg);color:var(--acc);border-radius:999px;padding:2px 10px;font-weight:600}
+.site-nav{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);padding:8px 26px;display:flex;gap:4px;flex-wrap:wrap;box-shadow:0 1px 4px rgba(15,23,42,.04)}
+.site-nav a{text-decoration:none;color:var(--ink);font-size:12.5px;padding:6px 12px;border-radius:999px;border:1px solid transparent}
+.site-nav a:hover{background:#f1f5f9}
+.site-nav a.active{background:var(--accbg);color:var(--acc);font-weight:700;border-color:#cde8db}
+main{max-width:1240px;margin:0 auto;padding:22px 26px 60px}
+.pagehead{margin-bottom:16px}
+.pagehead h1{font-size:22px;margin:0 0 4px}
+.pagehead .lead{color:var(--mut);font-size:13px;margin:0;max-width:950px;line-height:1.5}
+.takeaways{background:linear-gradient(180deg,#f0f7f3,#fff);border:1px solid #cde8db;border-left:4px solid var(--acc);border-radius:12px;padding:12px 16px;margin-bottom:18px}
+.takeaways h3{margin:0 0 8px;font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 1px 3px rgba(16,24,40,.05);transition:transform .1s,box-shadow .1s}
+.kpi.link{cursor:pointer}
+.kpi.link:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(16,24,40,.10)}
+.kpi .l{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+.kpi .v{font-size:20px;font-weight:700;margin-top:3px}
+.kpi .s{font-size:11px;color:var(--mut);margin-top:2px;line-height:1.4}
+.up{color:var(--grn)}.dn{color:var(--red)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(16,24,40,.05)}
+.card h3{margin:0 0 10px;font-size:14px}
+.card .note{font-size:11.5px;color:var(--mut);margin-top:9px;line-height:1.45}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+.card.cta{background:linear-gradient(135deg,#0b6e4f,#0e8a63);border:none;color:#fff}
+.card.cta h3,.card.cta .note,.card.cta p{color:#f2fbf6}
+.btn{display:inline-block;background:#fff;color:var(--acc);font-weight:700;font-size:13px;text-decoration:none;border-radius:9px;padding:9px 16px}
+.btn:hover{background:#eef7f2}
+.tscroll{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:9px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{text-align:left;color:var(--mut);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;padding:7px 9px;border-bottom:1px solid var(--line);background:#fff}
+td{padding:6.5px 9px;border-bottom:1px solid #f1f5f9}
+.tscroll tr:hover{background:#f8fafc}
+tr.total td{background:#f8fafc;font-weight:700}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+.search{width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;margin-bottom:8px}
+.hb{display:grid;grid-template-columns:170px 1fr 92px;gap:10px;align-items:center;margin:7px 0;font-size:12.5px;cursor:pointer}
+.hb .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .tr{background:#f1f5f9;border-radius:6px;height:17px;overflow:hidden}
+.hb .fl{height:100%;border-radius:6px}
+.hb .vl{font-variant-numeric:tabular-nums;color:var(--mut);text-align:right;font-size:11.5px}
+.hb.sel{outline:2px solid var(--ink);outline-offset:2px;border-radius:8px}
+.vbwrap{display:flex;align-items:flex-end;gap:5px;height:190px;padding-top:14px}
+.vb{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;cursor:pointer;min-width:0}
+.vb .vt{font-size:9.5px;color:var(--mut);height:11px}
+.vb .vbar-b{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:opacity .12s}
+.vb:hover .vbar-b{opacity:.75}
+.vb .vlb{font-size:9px;color:var(--mut);white-space:nowrap;overflow:hidden;max-width:100%}
+table.heat{border-collapse:separate;border-spacing:2px;font-size:11px}
+table.heat th{background:none;border:none;padding:3px 4px;position:static}
+table.heat td{text-align:center;border:none;padding:4px 6px;border-radius:4px}
+table.heat .hrow td:first-child{font-weight:600;text-align:left;cursor:pointer;color:var(--ink)}
+table.heat .hc{cursor:pointer}
+table.heat .na{color:#cbd5e1}
+table.heat .xh{cursor:pointer}
+.ins{display:flex;gap:9px;align-items:flex-start;margin:8px 0;font-size:13px;line-height:1.5}
+.ins .dot{flex:0 0 9px;width:9px;height:9px;border-radius:50%;margin-top:5px}
+.dot.pos{background:var(--grn)}.dot.neg{background:var(--red)}.dot.warn{background:var(--amber)}.dot.info{background:var(--blue)}
+.ins .txt{flex:1}
+.ins .pg{margin-left:auto;flex:0 0 auto;font-size:10.5px;color:var(--mut);background:#f1f5f9;border-radius:999px;padding:2px 9px;white-space:nowrap;margin-top:3px}
+.ins[data-href]{cursor:pointer}
+.ins[data-href]:hover .pg{background:var(--accbg);color:var(--acc)}
+ul.tight{margin:6px 0 0;padding-left:18px}
+ul.tight li{margin:5px 0;line-height:1.5}
+.pill{display:inline-block;font-size:10.5px;border-radius:999px;padding:1px 8px;font-weight:600;white-space:nowrap}
+.pill.g{background:#e8f5ec;color:var(--grn)}
+.pill.r{background:#fdeceb;color:var(--red)}
+.pill.n{background:#eef1f5;color:var(--mut)}
+.pill.b{background:#e0f2fe;color:#0369a1}
+details.pp{background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin-bottom:10px}
+details.pp summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}
+details.pp[open] summary{margin-bottom:8px}
+.chart svg{display:block}
+#tip{position:fixed;display:none;background:#111827;color:#f9fafb;font-size:11.5px;line-height:1.55;padding:7px 10px;border-radius:7px;pointer-events:none;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:300px}
+.legend{display:flex;gap:14px;font-size:11.5px;color:var(--mut);margin-top:8px;flex-wrap:wrap;align-items:center}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px dashed #94a3b8;margin-right:5px;vertical-align:middle}
+.legend i.sw{height:10px;border-top:none;border-radius:2px}
+.legend i.ln{height:10px;border-top:none;border-radius:2px}
+.pagefoot{display:flex;gap:14px;align-items:center;margin-top:26px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--mut);flex-wrap:wrap}
+.pagefoot a.pn{color:var(--acc);font-weight:600;text-decoration:none}
+.pagefoot a.pn:hover{text-decoration:underline}
+.pagefoot .regen{flex:1;text-align:center;font-size:11px}
+code{background:#f1f5f9;border-radius:4px;padding:1px 5px;font-size:11.5px}
+
+
+.live{border:1px dashed #b9d4c6;background:#fbfdfc}
+.live h3{margin:0 0 6px}
+.live .lrow{display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap}
+.live .llab{min-width:190px;font-weight:600;font-size:12.5px}
+.live .llab .hint{display:block;font-weight:400;color:var(--mut);font-size:10.5px}
+.live input[type=file]{font-size:11.5px;color:var(--mut)}
+.live .lstat{font-size:11.5px;color:var(--mut);flex:1;min-width:140px}
+.live .lstat.ok{color:var(--grn);font-weight:600}
+.live .lstat.err{color:var(--red)}
+.live .paste{display:none;flex-direction:column;gap:6px;margin-top:8px}
+.live .paste.open{display:flex}
+.live .paste textarea{width:100%;height:90px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;border:1px solid var(--line);border-radius:8px;padding:8px}
+.live .btn{background:var(--accbg);color:var(--acc);border:1px solid #cde8db;font-weight:600;font-size:11.5px;text-decoration:none;border-radius:8px;padding:5px 12px;cursor:pointer}
+.live .btn:hover{background:#e2f0e9}
+.live .banner{background:var(--accbg);border-left:3px solid var(--acc);border-radius:8px;padding:7px 12px;font-size:12px;color:#0a5c45;margin-top:10px;display:none}
+.live .banner.on{display:block}
+
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="brand">🧴 <b>Retention &amp; Category Intelligence</b></div>
+  <div class="meta"><span class="chip">Sales: 25 Jul – 25 Jul 2026</span><span class="chip">Journey: 152,091 customers</span><span class="chip">AOP: 51 months</span><span class="chip">generated 2026-08-27</span></div>
+</header>
+<nav class="site-nav"><a href="index.html">🏠 Overview</a><a href="migration.html" class="active">🔀 1 · Migration</a><a href="sales.html">📊 2 · Sales</a><a href="nps-cs.html">💬 3 · NPS &amp; CS</a><a href="pricing.html">💰 4 · Pricing</a><a href="retention.html">🔁 5 · Retention</a><a href="ntc.html">📈 6 · New-to-Category</a><a href="definitions.html">📖 7 · Definitions</a><a href="insights.html">💡 8 · Insights</a><a href="journey.html">⛏ Journey</a></nav>
+<main>
+  <div class="pagehead">
+    <h1>🔀 1 · Migration</h1>
+    <p class="lead">Where customers move after their first purchase — net inter-category movement, V2V/V2C by category, and the category-scoped (no customer ids) movement sheet.</p>
+  </div>
+  <div class="takeaways"><h3>⚡ Deep cuts — auto-detected from the current CSVs (nothing handwritten)</h3><div id="cuts"></div></div>
+  <div class="card live"><h3>📂 Live data — add your own CSV(s) and re-analyze in your browser</h3><div class="note" style="margin-top:0">Drop in any version of this source (new month, different scope, your own extract). The page is re-computed and re-rendered client-side with the same rules as the bundled data — nothing is uploaded anywhere. A file that does not match the expected schema gets a generic structural analysis instead.</div><div id="livePanel"></div></div>
+  
+  <div class="cards" id="kpis"></div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Net migration by category (gained − lost) <span class="note" style="display:inline">hover a bar for the split</span></h3>
+      <div id="c_net" class="chart"></div>
+      <div class="note">Gained = customers whose 1st order was elsewhere but 2nd order is here; lost = the reverse. Only customers with an observed 2nd order are included. Primary line per order avoids many-to-many inflation.</div>
+    </div>
+    <div class="card">
+      <h3>V2V / V2C by category <span class="note" style="display:inline">click headers to sort</span></h3>
+      <div id="c_v2c"></div>
+      <div class="note">V2C ≥ V2V by construction; separate formulas, never identical. Scope: D2C · Moisturisers × first 6 orders.</div>
+    </div>
+  </div>
+  <div class="card">
+      <h3>🧴 Intra-category movement — category-scoped sales (2026-07-25 → 2026-08-23, split 2026-08-08) <span class="note" style="display:inline">click headers to sort · searchable</span></h3>
+      <div class="note" style="margin-top:0;margin-bottom:10px" id="n_intranote">Aggregated export — <b>no customer ids</b>: SKU/grammage-level revenue-share movement, not customer migration. 32 SKUs in scope · 0 entered · 3 exited in 2nd half.</div>
+      <div id="c_intra"></div>
+    </div>
+  <div class="card">
+    <h3>📄 Seasonality &amp; Migration summary sheet (July 2026)</h3>
+    <div class="note">Tabs in the live app: Seasonality · Order frequency · Grammage transitions. Displayed as-is; its grammage “entry” figures could not be exactly reproduced from the base sheet (undocumented entry-cohort definition) — both views agree on direction (Aloe Vera losing customers).</div>
+  </div>
+  <div class="card" id="profileCard" style="display:none"></div>
+  <div class="pagefoot">
+    <a class="pn" href="index.html">← Overview</a>
+    <span class="regen">Generated 2026-08-27 from the uploaded CSVs — no hand-typed numbers · regenerate: <code>python make_web_dashboard.py</code></span>
+    <a class="pn" href="sales.html">2 · Sales →</a>
+  </div>
+</main>
+<div id="tip"></div>
+<script>
+const DATA = {"kpis":[{"label":"Acquired customers","value":"152,091","sub":"193,756 orders · first 6 per customer"},{"label":"V2V % (same variant)","value":"31.8%","sub":"qualifying 2nd orders: 24,771"},{"label":"V2C % (same category)","value":"69.1%","sub":"same denominator as V2V"},{"label":"Category repeat / switch","value":"11.3% / 5.0%","sub":"avg 123 d from 1st → 2nd order"}],"net":[{"label":"Active Gel","value":750.0,"tip":"2,555 gained · 1,805 lost","vlabel":"+750","color":"#1a7f37"},{"label":"Face Malai","value":173.0,"tip":"3,432 gained · 3,259 lost","vlabel":"+173","color":"#1a7f37"},{"label":"Aloe Vera Gel","value":-923.0,"tip":"1,666 gained · 2,589 lost","vlabel":"−923","color":"#c0392b"}],"v2c":{"headers":["Category","Qualifying","V2V %","V2C %"],"rows":[["Face Malai","16,374","29.6%","80.1%"],["Aloe Vera Gel","5,343","43.5%","51.5%"],["Active Gel","3,054","23.0%","40.9%"],["<b>Overall<\/b>","<b>24,771<\/b>","<b>31.8%<\/b>","<b>69.1%<\/b>"]],"num":[1,2,3]},"intra":{"headers":["Grammage","Share 1st half","Share 2nd half","Δ",""],"rows":[["30g","36.4%","42.3%","+5.87 pp","<span class=\"pill g\">gainer<\/span>"],["250ml","0.8%","1.1%","+0.24 pp","<span class=\"pill g\">gainer<\/span>"],["20","6.7%","6.8%","+0.15 pp","<span class=\"pill g\">gainer<\/span>"],["75","6.6%","6.7%","+0.11 pp","<span class=\"pill g\">gainer<\/span>"],["5g","0.0%","0.0%","+0.03 pp","<span class=\"pill g\">gainer<\/span>"],["200ml","0.0%","0.0%","—","<span class=\"pill n\">exited<\/span>"],["9","8.5%","8.3%","-0.14 pp","<span class=\"pill r\">loser<\/span>"],["50g","40.9%","34.7%","-6.25 pp","<span class=\"pill r\">loser<\/span>"]],"num":[1,2,3],"search":"Filter grammages…"},"cuts":[{"text":"Of 152,091 acquired customers, 24,771 placed a second order (16.3%); 11.3% repeated in the same category while 5.0% switched to a different one.","tone":"info"},{"text":"Average time from first to second order is 123 d.","tone":"info"},{"text":"Strongest stay-rate: Face Malai (13.9% of acquired customers repeated in the same category).","tone":"info"},{"text":"Largest outflow: Active Gel — 10.2% of its customers moved to another category; top destination: Face Malai.","tone":"info"},{"text":"Net migration gainer: Active Gel (+750); net loser: Aloe Vera Gel (-923).","tone":"info"}]};
+
+"use strict";
+const S = (id) => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+const TIP = S("tip");
+function tipShow(html, x, y){ TIP.innerHTML = html; TIP.style.display = "block";
+  const w = TIP.offsetWidth; let L = x + 14; if (L + w > window.innerWidth - 8) L = x - w - 14;
+  TIP.style.left = L + "px"; TIP.style.top = (y + 12) + "px"; }
+function tipHide(){ TIP.style.display = "none"; }
+function bindTip(el, fn){ el.addEventListener("mousemove", e => tipShow(fn(), e.clientX, e.clientY));
+  el.addEventListener("mouseleave", tipHide); }
+
+function kpis(el, items){ if(!el || !items) return;
+  el.innerHTML = items.map(k => `<div class="kpi${k.href ? " link" : ""}" ${k.href ? `data-href="${k.href}"` : ""}>
+    <div class="l">${esc(k.label)}</div><div class="v ${k.cls || ""}">${k.value}</div><div class="s">${esc(k.sub || "")}</div></div>`).join("");
+  el.querySelectorAll(".kpi.link").forEach(c => c.onclick = () => location.href = c.dataset.href);
+}
+
+function hbars(el, items, opts = {}){ if(!el || !items || !items.length){ if(el) el.innerHTML = "<div class='note'>No data.</div>"; return; }
+  const max = Math.max(...items.map(i => i.value), 0.0001);
+  el.innerHTML = items.map((i, ix) => `<div class="hb" data-i="${ix}" ${i.href ? `data-href="${i.href}"` : ""}>
+    <div class="hl" title="${esc(i.label)}">${esc(i.label)}</div>
+    <div class="tr"><div class="fl" style="width:${(i.value / max * 100).toFixed(1)}%;background:${i.color || "#0b6e4f"}"></div></div>
+    <div class="vl">${i.val || esc(i.value)}</div></div>`).join("");
+  el.querySelectorAll(".hb").forEach(rw => {
+    const i = items[+rw.dataset.i];
+    bindTip(rw, () => `<b>${esc(i.label)}</b><br>${i.tip || i.val || esc(i.value)}`);
+    if(opts.onClick) rw.onclick = () => opts.onClick(+rw.dataset.i);
+    else if(i.href) rw.onclick = () => location.href = i.href;
+  });
+}
+
+function vbars(el, items, opts = {}){ if(!el || !items || !items.length){ if(el) el.innerHTML = "<div class='note'>No data.</div>"; return; }
+  const max = Math.max(...items.map(i => Math.abs(i.value)), 0.0001);
+  const every = opts.xEvery || 1;
+  el.innerHTML = `<div class="vbwrap" style="height:${opts.height || 190}px">` + items.map((i, ix) =>
+    `<div class="vb" data-i="${ix}"><div class="vt">${i.vlabel !== undefined ? i.vlabel : esc(i.value)}</div>
+     <div class="vbar-b" style="height:${(Math.abs(i.value) / max * 100).toFixed(1)}%;background:${i.color || "#0b6e4f"}"></div>
+     <div class="vlb" ${ix % every ? 'style="visibility:hidden"' : ""}>${esc(i.label)}</div></div>`).join("") + `</div>`;
+  el.querySelectorAll(".vb").forEach(col => {
+    const i = items[+col.dataset.i];
+    bindTip(col, () => `<b>${esc(i.label)}</b><br>${i.tip || (i.vlabel !== undefined ? i.vlabel : esc(i.value))}`);
+    if(opts.onClick) col.onclick = () => opts.onClick(+col.dataset.i);
+  });
+}
+
+function lineChart(el, cfg){ if(!el || !cfg || !cfg.labels || !cfg.labels.length){ if(el) el.innerHTML = "<div class='note'>No data.</div>"; return; }
+  const W = 880, H = cfg.height || 250, L = 48, R = 16, T = 16, B = 34;
+  const M = cfg.labels.length, ymax = cfg.ymax || 1;
+  const X = i => L + (W - L - R) * i / Math.max(1, M - 1);
+  const Y = v => T + (H - T - B) * (1 - v / ymax);
+  const yFmt = v => cfg.yFmt === "cr" ? "₹" + v + "Cr" : v;
+  let s = "";
+  const gstep = cfg.grid || Math.max(1, Math.ceil(ymax / 5));
+  for(let g = 0; g <= ymax + 0.001; g += gstep){
+    s += `<line x1="${L}" y1="${Y(g)}" x2="${W-R}" y2="${Y(g)}" stroke="#eef1f5"/>
+      <text x="${L-6}" y="${Y(g)+4}" font-size="10" fill="#94a3b8" text-anchor="end">${yFmt(g)}</text>`;
+  }
+  const xe = cfg.xEvery || Math.ceil(M / 10);
+  cfg.labels.forEach((lb, i) => { if(i % xe === 0 || i === M - 1)
+    s += `<text x="${X(i)}" y="${H-8}" font-size="10" fill="#94a3b8" text-anchor="middle">${esc(lb)}</text>`; });
+  cfg.series.forEach(sr => {
+    if(sr.bars){ sr.values.forEach((v, i) => { if(v != null)
+      s += `<rect x="${(X(i) - 9).toFixed(1)}" y="${Y(v).toFixed(1)}" width="18" height="${(Y(0) - Y(v)).toFixed(1)}" fill="${sr.color}" opacity="0.85" rx="2"/>`; });
+      return; }
+    let pts = ""; sr.values.forEach((v, i) => { if(v != null) pts += X(i) + "," + Y(v) + " "; });
+    if(pts) s += `<polyline points="${pts}" fill="none" stroke="${sr.color}" stroke-width="2" ${sr.dashed ? 'stroke-dasharray="6 4"' : ""}/>`;
+  });
+  (cfg.markers || []).forEach(mk => {
+    s += `<line x1="${X(mk.i)}" y1="${T}" x2="${X(mk.i)}" y2="${H-B}" stroke="#c62828" stroke-dasharray="5 4"/>
+      <circle cx="${X(mk.i)}" cy="${T+6}" r="3" fill="#c62828"/>`;
+  });
+  s += `<line id="xhair" x1="-99" y1="${T}" x2="-99" y2="${H-B}" stroke="#64748b" stroke-dasharray="3 3" opacity="0"/>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="cursor:crosshair">${s}</svg>`;
+  const svg = el.querySelector("svg"), xh = svg.querySelector("#xhair");
+  const idx = e => { const r = svg.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * (W / r.width);
+    return Math.max(0, Math.min(M - 1, Math.round((mx - L) / ((W - L - R) / Math.max(1, M - 1))))); };
+  svg.addEventListener("mousemove", e => {
+    const i = idx(e);
+    xh.setAttribute("x1", X(i)); xh.setAttribute("x2", X(i)); xh.setAttribute("opacity", "1");
+    let t = `<b>${esc(cfg.labels[i])}</b>`;
+    cfg.series.forEach(sr => { const v = sr.values[i]; if(v != null) t += `<br>${esc(sr.name)}: ${yFmt(v)}`; });
+    const mk = (cfg.markers || []).find(m => m.i === i); if(mk && mk.tip) t += `<br><span style="color:#fca5a5">${esc(mk.tip)}</span>`;
+    tipShow(t, e.clientX, e.clientY);
+  });
+  svg.addEventListener("mouseleave", () => { xh.setAttribute("opacity", "0"); tipHide(); });
+  if(cfg.onClick) svg.addEventListener("click", e => cfg.onClick(idx(e)));
+}
+
+function heat(el, cfg){ if(!el || !cfg || !cfg.vals || !cfg.vals.length){ if(el) el.innerHTML = "<div class='note'>No data.</div>"; return; }
+  let h = `<table class="heat"><tr><th></th>` + cfg.xlabels.map((x, ix) => `<th class="xh" data-x="${ix}">${esc(x)}</th>`).join("") + `</tr>`;
+  cfg.vals.forEach((row, ry) => {
+    h += `<tr class="hrow" data-y="${ry}"><td>${esc(cfg.ylabels[ry])}</td>`;
+    row.forEach((v, cx) => {
+      if(v == null){ h += `<td class="na">—</td>`; return; }
+      const a = 0.07 + 0.8 * Math.min(1, v / (cfg.max || 1));
+      h += `<td class="hc" data-y="${ry}" data-x="${cx}" style="background:rgba(11,110,79,${a.toFixed(2)});color:${a > 0.5 ? "#fff" : "var(--ink)"}">${cfg.fmt ? cfg.fmt(v) : v}</td>`;
+    });
+    h += `</tr>`;
+  });
+  h += `</table>`;
+  el.innerHTML = h;
+  el.querySelectorAll(".hc").forEach(td => {
+    const ry = +td.dataset.y, cx = +td.dataset.x, v = cfg.vals[ry][cx];
+    bindTip(td, () => (cfg.cellTip ? cfg.cellTip(ry, cx, v)
+      : `<b>${esc(cfg.ylabels[ry])} × ${esc(cfg.xlabels[cx])}</b><br>${cfg.fmt ? cfg.fmt(v) : v}`));
+    if(cfg.onCell) td.onclick = () => cfg.onCell(ry, cx, v);
+  });
+  if(cfg.onRow) el.querySelectorAll(".hrow td").forEach(td => td.onclick = () => cfg.onRow(+td.parentElement.dataset.y));
+  if(cfg.onCol) el.querySelectorAll(".xh").forEach(th => th.onclick = () => cfg.onCol(+th.dataset.x));
+}
+
+function table(el, cfg, opts = {}){ if(!el || !cfg){ return; }
+  let rows = (cfg.rows || []).slice();
+  el.innerHTML = (opts.search ? `<input class="search" type="text" placeholder="${esc(cfg.search || "Search…")}">` : "") +
+    `<div class="tscroll"><table class="tbl"></table></div>`;
+  const tb = el.querySelector("table");
+  let sortK = null, sortD = -1;
+  function draw(q){
+    q = (q || "").toLowerCase();
+    const rr = rows.filter(r => !q || String(r.join(" ")).toLowerCase().includes(q));
+    if(sortK != null){ const k = sortK;
+      rr.sort((a, b) => { const x = a[k], y = b[k];
+        if(typeof x === "number" && typeof y === "number") return (x - y) * sortD;
+        return String(x).localeCompare(String(y)) * sortD; }); }
+    tb.innerHTML = `<tr>${cfg.headers.map((h, i) =>
+      `<th class="sortable ${cfg.num && cfg.num.includes(i) ? "num" : ""}" data-k="${i}">${h}${i === sortK ? (sortD < 0 ? " ▼" : " ▲") : " ◆"}</th>`).join("")}</tr>` +
+      rr.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("");
+    tb.querySelectorAll("th.sortable").forEach(th => th.onclick = () => {
+      const k = +th.dataset.k;
+      if(sortK === k) sortD *= -1; else { sortK = k; sortD = -1; }
+      draw(q);
+    });
+    if(cfg.onRow) tb.querySelectorAll("tr").forEach((tr, ix) => { if(ix) tr.onclick = () => cfg.onRow(tr, ix - 1); });
+  }
+  if(opts.search) el.querySelector("input").addEventListener("input", e => draw(e.target.value));
+  draw("");
+}
+
+function insights(el, items, opts = {}){ if(!el) return;
+  if(!items || !items.length){ el.innerHTML = `<div class="note">No deep cuts detected for the current data.</div>`; return; }
+  el.innerHTML = items.map(i => `<div class="ins" ${i.href ? `data-href="${i.href}"` : ""}>
+    <span class="dot ${i.tone || "info"}"></span><span class="txt">${i.html ? i.html : esc(i.text)}</span>
+    ${i.href ? `<span class="pg"><a href="${i.href}">open ↗</a></span>` : (i.page ? `<span class="pg">${esc(i.page)}</span>` : "")}</div>`).join("");
+  el.querySelectorAll(".ins[data-href]").forEach(r => r.onclick = () => location.href = r.dataset.href);
+}
+
+
+/* ================= LIVE kit (in-browser CSV -> recompute) ================= */
+const LIVE = (() => {
+"use strict";
+const S = id => document.getElementById(id);
+/* ---------- normalization (ports of formatting.py) ---------- */
+const EMB = {"\u2019":"'","\u2018":"'","\u201c":"\"","\u201d":"\"","\u2013":"-","\u2014":"-","\u00a0":" "};
+function cleanStr(v){ if(v==null) return ""; let s=String(v); for(const k in EMB) s=s.split(k).join(EMB[k]); return s.trim(); }
+function isBlank(v){ const s=cleanStr(v); const l=s.toLowerCase(); return s===""||s==="-"||s==="—"||s==="--"||l==="nan"||l==="none"||s==="null"||s==="#REF!"; }
+function pNum(v){ if(v==null) return NaN; const s=cleanStr(v).replace(/\u20b9/g,"").replace(/\s/g,"");
+  if(s===""||s==="-"||s==="—"||s==="--") return NaN;
+  const m=s.match(/[-+]?\d[\d,]*\.?\d*/); if(!m) return NaN;
+  const x=parseFloat(m[0].replace(/,/g,"")); return isFinite(x)?x:NaN; }
+function pPct(v, max){ max=(max==null)?1.5:max; const n=pNum(v); if(isNaN(n)) return NaN;
+  if(cleanStr(v).indexOf("%")>=0) return n/100; if(n>max) return n/100; return n; }
+const MONTHS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function expand2y(y){ return y>=70?y:2000+y; }
+function pMonthLabel(v){ let s=cleanStr(v); if(!s) return null; s=s.replace(/\u2019/g,"'");
+  let m=s.match(/^([A-Za-z]{3,9})\s*[-'\/]?\s*'?(\d{2,4})$/);
+  if(m){ const mon=MONTHS[m[1].slice(0,3).toLowerCase()]; if(mon) return String(expand2y(parseInt(m[2],10))).padStart(4,"0")+"-"+String(mon).padStart(2,"0"); }
+  m=s.match(/^(\d{4})[-\/](\d{1,2})$/); if(m) return m[1]+"-"+String(parseInt(m[2],10)).padStart(2,"0");
+  m=s.match(/^(\d{4})(\d{2})$/); if(m) return m[1]+"-"+m[2]; return null; }
+function pDate(v){ const s=cleanStr(v); if(!s) return null; const mo=n=>MONTHS[n.slice(0,3).toLowerCase()]; let m;
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/); if(m) return {y:+m[1],m:+m[2],d:+m[3]};
+  m=s.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),\s*(\d{4})(?:[,\s].*)?$/); if(m){ const mon=mo(m[1]); if(mon) return {y:+m[3],m:mon,d:+m[2]}; }
+  m=s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/); if(m) return {y:+m[3],m:+m[2],d:+m[1]};
+  m=s.match(/^(\d{1,2})\s+([A-Za-z]{3,9}),?\s*(\d{4})/); if(m){ const mon=mo(m[2]); if(mon) return {y:+m[3],m:mon,d:+m[1]}; }
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(m) return {y:+m[3],m:+m[1],d:+m[2]};
+  m=s.match(/^(\d{1,2})-([A-Za-z]{3,9})-(\d{4})$/); if(m){ const mon=mo(m[2]); if(mon) return {y:+m[3],m:mon,d:+m[1]}; }
+  return null; }
+function monthOf(dt){ return dt? dt.y+"-"+String(dt.m).padStart(2,"0") : null; }
+function daysDiff(a,b){ return Math.round((Date.UTC(b.y,b.m-1,b.d)-Date.UTC(a.y,a.m-1,a.d))/86400000); }
+function addDays(dt,d){ const t=Date.UTC(dt.y,dt.m-1,dt.d+d); const o=new Date(t); return {y:o.getUTCFullYear(),m:o.getUTCMonth()+1,d:o.getUTCDate()}; }
+const fmtI = n => (n==null||isNaN(n)) ? "\u2014" : Math.round(n).toLocaleString("en-US");
+function fmtP(x, d, signed){ if(x==null||isNaN(x)||!isFinite(x)) return "\u2014";
+  const v=x*100; const sgn=(signed&&v>0)?"+":""; return sgn+v.toFixed(d==null?1:d)+"%"; }
+function fmtPAuto(x){ if(x==null||isNaN(x)||!isFinite(x)) return "\u2014"; return fmtP(x, Math.abs(x*100)<10?2:1); }
+function fmtMoney(x){ if(x==null||isNaN(x)||!isFinite(x)) return "\u2014";
+  const neg=x<0, a=Math.abs(x); let s;
+  if(a>=1e7) s="\u20b9"+(a/1e7).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})+"Cr";
+  else if(a>=1e5) s="\u20b9"+(a/1e5).toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1})+"L";
+  else s="\u20b9"+Math.round(a).toLocaleString("en-US");
+  return (neg?"-":"")+s; }
+function splitMulti(v){ const s=String(v||""); const out=[]; const seen=new Set();
+  for(const t of s.split(/[|;,&]+/)){ const t2=t.trim(); if(!t2) continue; const k=t2.toLowerCase(); if(!seen.has(k)){ seen.add(k); out.push(t2); } } return out; }
+const NO_COMPLAINT = ["no complaints","no complaint","none","n/a","na","-"];
+function isNoComplaint(t){ const l=t.toLowerCase().trim(); return NO_COMPLAINT.some(x=>l===x||l.startsWith(x)); }
+const safeDiv = (a,b) => (b==null||b===0||isNaN(a)||isNaN(b)) ? NaN : a/b;
+
+/* ---------- CSV parser ---------- */
+function parseCSV(text){
+  text = String(text==null?"":text).replace(/^\uFEFF/,"");
+  const rows=[]; let row=[], field="", inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; }
+      else field+=c;
+    } else {
+      if(c==='"') inQ=true;
+      else if(c===","){ row.push(field); field=""; }
+      else if(c==="\n"){ row.push(field); field=""; rows.push(row); row=[]; }
+      else if(c==="\r"){ /* skip; \n ends row; lone \r also ends */ if(text[i+1]!=="\n"){ row.push(field); field=""; rows.push(row); row=[]; } }
+      else field+=c;
+    }
+  }
+  if(field!=="" || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.some(c=>cleanStr(c)!=="" || (r.length===1&&c==="")));
+}
+function normName(s){ s=cleanStr(s).toLowerCase();
+  s=s.replace(/[_\/\-\.()\[\]\u2019'\u2013]+/g," "); return s.replace(/\s+/g," ").trim(); }
+
+const ALIASES = {
+  sales: { order_date:["order date","date","order month","month","sale date","transaction date"],
+    sku:["sku","sku code","product code","item","code"], channel:["order source","channel","source","sales channel"],
+    product:["product","product variant","variant","product name","short code"], category:["category","product category","cat"],
+    orders:["orders","order count","no of orders","order cnt"], customers:["customers","customer count","unique customers","no of customers","cust count"],
+    quantity:["quantity","qty","units","units sold","volume"], revenue:["revenue","revenue inr","rev","amount","net revenue","sales value","value"] },
+  category_sales: null,
+  journey: { customer_id:["customer id","customer","cust id","cust","member id","user id","name"],
+    order_id:["order id","order number","order no","invoice id","order"], order_date:["order date","date","order datetime","purchase date"],
+    sku:["sku","sku code","product code"], product:["product","product variant","variant","product name","item name"],
+    category:["category","product category","cat"], channel:["channel","order source","source"], quantity:["quantity","qty","units"] },
+  nps: { id:["id","response id","survey id"], created_at:["created at","created at date","date","response date","submitted at"],
+    customer_id:["customer id","customer"], category:["product category","category","product categories"],
+    variant:["product variant","variant","product"], age:["age"], skin_type:["skin type"], hair_type:["hair type"],
+    brand_score:["nps score for brand","brand nps","brand score","nps brand"],
+    product_score:["nps score for product","product nps","product score","nps product"],
+    migrated_from:["brand customer migrated from","migrated from","brand migrated from","previous brand"],
+    like_brand:["what do you like about nat habit","what do you like about nathabit","like brand"],
+    dislike_brand:["what do you not like about nat habit","dislike brand"],
+    like_product:["like product","what do you like","likes"], dislike_product:["not like product","what do you not like","dislikes"] },
+  cs: { id:["id","ticket id","chat id"], created_at:["created at","date","ticket date"], customer_name:["customer name","customer"],
+    order_name:["order name","order id","order"], order_count:["order count"], chat_status:["chat status","status","resolution status"],
+    provided_resolution:["provided resolution","resolution"], failure_type:["failure type","issue type"],
+    failure_reason:["failure reason","reason"], failure_subreason:["failure subreason","subreason","sub reason"],
+    products_ordered:["products ordered","products"], products_impacted:["products impacted","impacted product","impacted products"],
+    category:["product impacted category","category","product category"], responsible_team:["responsible team","team"],
+    remarks:["remarks","remark","case remarks"], global_remark:["global remark","global remarks","customer remark"],
+    fulfilled_time:["fulfilled time","fulfilment time"], delivery_time:["delivery time","delivered time"], city:["city"], state:["state"] },
+  retention_fm: { onb_date:["product onb date","onb date","onboarding date","launch date"], category:["product category","category"],
+    sku:["sku","sku code"], price_note:["lookup price thing","price revision","price change"], variant:["short code","variant","product variant"],
+    channel:["channel","order source"], customers:["customer","customers","customer count"] },
+  order_movement: { cohort:["onb month","onb month","cohort","cohort month","month"], first_order:["first order","new customers","new orders"],
+    sec_order:["sec order","second order"], sec_pct:["sec pct","second order pct","second order %","sec %"], avg_days_sec:["avg days to sec","avg days 2nd"],
+    third_order:["third order"], third_pct:["third pct","third order pct","third order %"], avg_days_third:["avg days to third"],
+    fourth_order:["fourth order"], fourth_pct:["fourth pct","fourth order pct","fourth order %"], avg_days_fourth:["avg days to fourth"],
+    fifth_order:["fifth order"], fifth_pct:["fifth pct","fifth order pct","fifth order %"], avg_days_fifth:["avg days to fifth"],
+    sixth_order:["sixth order"], sixth_pct:["sixth pct","sixth order pct","sixth order %"], avg_days_sixth:["avg days to sixth"] },
+  any: {}
+};
+ALIASES.category_sales = ALIASES.sales;
+const REQUIRED = { sales:["order_date","category","revenue"], category_sales:["order_date","category","revenue"],
+  journey:["customer_id","order_date","category"], nps:["brand_score","product_score"], cs:["created_at"],
+  retention_fm:["onb_date","sku","customers"], order_movement:["cohort","first_order"], aop:[], any:[] };
+const HEADER_ANCHORS = {
+  sales: h => (h.some(x=>x==="revenue"||x==="rev")) && h.some(x=>["order date","date","month","order month"].includes(x)),
+  category_sales: null,
+  journey: h => { const cust=h.some(x=>["customer id","customer","cust id","user id","member id","name"].includes(x));
+    const dated=h.some(x=>["order date","date","purchase date"].includes(x)) || h.some(x=>x.includes("order date")); return cust&&dated; },
+  nps: h => h.some(x=>x.includes("nps")),
+  cs: h => h.includes("created at") || h.some(x=>x.includes("failure")),
+  retention_fm: h => h.some(x=>x.includes("onb")) && h.some(x=>/\d+\s*days/.test(x)),
+  order_movement: h => h.some(x=>x.includes("onb month")||x==="cohort") && h.some(x=>x.includes("order")),
+  aop: () => true,
+  any: () => true
+};
+HEADER_ANCHORS.category_sales = HEADER_ANCHORS.sales;
+
+function detectHeader(rows, key){
+  for(let i=0;i<Math.min(12,rows.length);i++){
+    const cells=new Set(); for(const v of rows[i]){ const n=normName(v); if(n) cells.add(n); }
+    const arr=[...cells];
+    if(key==="aop"){ if(arr.some(x=>x.includes("sd")&&x.includes("categor"))) return i; continue; }
+    const anchor = HEADER_ANCHORS[key];
+    if(anchor(arr)) return i;
+  }
+  return null;
+}
+
+function loadSource(key, text, rawGrid){
+  if(key==="price") key="sales";
+  const rows = parseCSV(text);
+  if(!rows.length) return {ok:false, reason:"empty file"};
+  const isAop = key==="aop";
+  const hi = isAop ? (detectHeader(rows,"aop")) : (detectHeader(rows,key));
+  if(hi==null && !isAop)
+    return {ok:false, reason:"no recognizable header row \u2014 is this the right CSV for this source? (showing generic analysis)", profile: profileOf(rows)};
+  if(isAop){ return {ok: true, raw: rows, n: rows.length, headers: (hi!=null? rows[hi] : rows[0])}; }
+  const header = rows[hi].map(normName);
+  const aliases = ALIASES[key] || {};
+  const colmap = {};
+  for(const canon of Object.keys(aliases)){
+    const variants = aliases[canon].map(normName);
+    let hit=null;
+    for(let j=0;j<header.length;j++) if(variants.includes(header[j])){ hit=j; break; }
+    if(hit==null){ const cands=new Set();
+      for(const vn of variants) for(let j=0;j<header.length;j++)
+        if(header[j] && (vn.includes(header[j]) || header[j].includes(vn)) && header[j].length>2) cands.add(j);
+      if(cands.size===1) hit=[...cands][0]; }
+    if(hit!=null && !Object.values(colmap).includes(hit)) colmap[canon]=hit;
+  }
+  const missing = (REQUIRED[key]||[]).filter(c=>!(c in colmap));
+  if(missing.length)
+    return {ok:false, reason:"missing required column(s): "+missing.join(", ")+" \u2014 showing generic analysis", profile: profileOf(rows)};
+  const body = rows.slice(hi+1).filter(r=>r.some(c=>!isBlank(c)));
+  const out = body.map(r=>{ const o={}; for(const c of Object.keys(colmap)) o[c]=cleanStr(r[colmap[c]]); return o; });
+  return {ok:true, rows:out, n:out.length, headers:rows[hi].map(cleanStr), colmap, rawRows:body};
+}
+
+/* ---------- generic profile (any CSV) ---------- */
+function profileOf(rows){
+  if(!rows.length) return null;
+  const header=rows[0].map((h,i)=>cleanStr(h)||("col"+(i+1)));
+  const body=rows.slice(1).filter(r=>r.some(c=>!isBlank(c)));
+  const stats=header.map((h,j)=>{ let ne=0; const seen=new Map();
+    for(const r of body){ const v=cleanStr(r[j]); if(v!==""){ ne++; if(seen.size<5000) seen.set(v,(seen.get(v)||0)+1); } }
+    let top=[]; for(const [v,c] of seen) top.push([v,c]); top.sort((a,b)=>b[1]-a[1]);
+    return {name:h, ne, uniq:Math.min(seen.size, body.length), top: top.slice(0,3).map(t=>t[0].slice(0,28))};
+  });
+  return {headers:header, n:body.length, stats, preview: body.slice(0,50).map(r=>r.map(cleanStr).map(v=>v.slice(0,60)))};
+}
+
+/* ---------- compute functions (ports of the Python models) ---------- */
+function C_SALES(res){
+  const rows=res.rows, warn=[];
+  let rev=0, orders=0, cust=0, hasO=false, hasC=false, bad=0, zeroQ=0, nRows=0;
+  const months=new Set(), byMonth={}, byCat={}, byChan={}, catMonth={};
+  for(const r of rows){
+    const dt=pDate(r.order_date); let m=dt?monthOf(dt):pMonthLabel(r.order_date);
+    if(!m){ bad++; continue; }
+    const v=pNum(r.revenue); if(isNaN(v)) continue;
+    nRows++; rev+=v;
+    months.add(m);
+    const o=pNum(r.orders), c=pNum(r.customers), q=pNum(r.quantity);
+    if(!isNaN(o)){ orders+=o; hasO=true; } if(!isNaN(c)){ cust+=c; hasC=true; }
+    if(!isNaN(q)&&q===0) zeroQ++;
+    const bm=byMonth[m]||(byMonth[m]={rev:0}); bm.rev+=v;
+    const cat=cleanStr(r.category)||"(Uncategorized)";
+    const cc=byCat[cat]||(byCat[cat]={rev:0,orders:isNaN(o)?0:o}); cc.rev+=v;
+    const ch=cleanStr(r.channel)||"(No channel)";
+    const chh=byChan[ch]||(byChan[ch]={rev:0}); chh.rev+=v;
+    const cm=catMonth[cat]||(catMonth[cat]={}); cm[m]=(cm[m]||0)+v;
+  }
+  if(bad) warn.push(bad+" row(s) with unparseable dates \u2014 skipped");
+  if(zeroQ) warn.push(zeroQ+" zero-quantity row(s) (revenue kept, flagged for price analysis)");
+  const aov=safeDiv(rev,orders);
+  const totCats=Object.values(byCat).sort((a,b)=>b.rev-a.rev);
+  let cum=0, paretoK=0;
+  const pareto=totCats.slice(0,10).map((g,i)=>{ cum+=safeDiv(g.rev,rev); if(!paretoK && cum>=0.80) paretoK=i+1;
+    return {label:g.label||(Object.keys(byCat)[i]), value:NaN, val:"", tip:""}; });
+  // rebuild with names
+  const catNames=Object.keys(byCat);
+  const catItems=totCats.map(g=>{ const name=catNames.find(k=>byCat[k]===g);
+    return {name, rev:g.rev, orders:g.orders}; });
+  cum=0; paretoK=0;
+  const pareto2=catItems.slice(0,10).map((g,i)=>{ cum+=safeDiv(g.rev,rev); if(!paretoK&&cum>=0.80) paretoK=i+1;
+    return {label:g.name.length>26?g.name.slice(0,26):g.name, value:safeDiv(g.rev,rev), val:fmtP(safeDiv(g.rev,rev)), tip:fmtMoney(g.rev)+" revenue"}; });
+  const top3Share=catItems.length>=3? catItems.slice(0,3).reduce((a,g)=>a+safeDiv(g.rev,rev),0) : NaN;
+  const chanItems=Object.entries(byChan).sort((a,b)=>b[1].rev-a[1].rev).slice(0,8)
+    .map(([n,g])=>({label:n.length>26?n.slice(0,26):n, value:safeDiv(g.rev,rev), val:fmtP(safeDiv(g.rev,rev))}));
+  const mlist=[...months].sort();
+  const top8=catItems.slice(0,8).map(g=>g.name);
+  const matrix={xlabels:mlist.map(m=>lblMonth(m)), ylabels:top8.map(c=>c.length>22?c.slice(0,22):c),
+    vals: top8.map(c=>mlist.map(m=>{ const v=catMonth[c]?catMonth[c][m]:null; return v==null?null:Math.round(v/1e7*1000)/1000; })),
+    max: Math.max(0.001, ...top8.flatMap(c=>mlist.map(m=>catMonth[c]?catMonth[c][m]||0:0)))/1e7};
+  const lastM=mlist[mlist.length-1];
+  const lastRev=byMonth[lastM]?byMonth[lastM].rev:NaN;
+  const kpis=[
+    {label:"Revenue"+(mlist.length>1?" \u00b7 "+lblMonth(lastM):""), value:fmtMoney(mlist.length>1?lastRev:rev), sub:mlist.length>1?"total "+fmtMoney(rev)+" across "+mlist.length+" month(s) \u00b7 "+nRows+" row(s)":nRows+" row(s)"},
+    {label:"Orders", value:hasO?fmtI(orders):"\u2014", sub:hasO?"sum of order counts":"no orders column"},
+    {label:"Customers", value:hasC?fmtI(cust):"\u2014", sub:hasC?"touch counts (no dedupe)":"no customers column"},
+    {label:"AOV", value:fmtMoney(aov), sub:"revenue \u00f7 orders"}
+  ];
+  const cuts=[];
+  if(catItems.length){ const g=catItems[0]; cuts.push({text:"Top category in your upload: "+g.name+" ("+fmtP(safeDiv(g.rev,rev))+" of revenue, "+fmtMoney(g.rev)+").", tone:"info"}); }
+  if(chanItems.length){ const g=chanItems[0]; cuts.push({text:"Top channel: "+g.label+" at "+fmtP(safeDiv(g.rev,rev))+" of revenue.", tone:"info"}); }
+  if(paretoK && catItems.length) cuts.push({text:"Pareto: "+paretoK+" of "+catItems.length+" categories carry 80% of revenue.", tone:"info"});
+  if(lastM && byMonth[lastM]) cuts.push({text:"Latest month in file: "+lblMonth(lastM)+" \u2014 "+fmtMoney(byMonth[lastM].rev)+" revenue.", tone:"info"});
+  return {kpis, pareto:pareto2, chan:chanItems, matrix, months:mlist,
+    byMonthCr: mlist.map(m=>byMonth[m]?Math.round(byMonth[m].rev/1e7*1000)/1000:null),
+    kpiMonth:{label:lblMonth(lastM), rev:byMonth[lastM]?byMonth[lastM].rev:NaN},
+    paretoK: paretoK||0, nCats: catItems.length, top3Share,
+    cuts, warn, n:nRows};
+}
+function lblMonth(m){ const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return MON[parseInt(m.slice(5),10)-1]+" '"+m.slice(2,4); }
+function lblToMonth(lbl){ const m=String(lbl).match(/^([A-Za-z]{3})\s*'?(\d{2})$/);
+  if(m){ const mon=MONTHS[m[1].toLowerCase()]; if(mon) return "20"+m[2]+"-"+String(mon).padStart(2,"0"); } return null; }
+
+function C_AOP(res){
+  const raw=res.raw, warn=[];
+  let metaI=-1;
+  for(let i=0;i<Math.min(5,raw.length);i++){ const f=cleanStr(raw[i][0]).toLowerCase();
+    if(f.includes("sd")&&f.includes("categor")){ metaI=i; break; } }
+  if(metaI<0) return {ok:false, reason:"could not locate the AOP header (expected an \u2018SD Category\u2019 column)"};
+  const labI=metaI-1, ncol=Math.max(...raw.map(r=>r.length));
+  const labelRow=(labI>=0?raw[labI]:[]).map(x=>cleanStr(x));
+  const metaRow=raw[metaI].map(x=>cleanStr(x));
+  const data=raw.slice(metaI+1).filter(r=>r.some(c=>!isBlank(c)));
+  const metaCols=[]; for(let j=0;j<ncol;j++){ if(labelRow[j]) break; if(metaRow[j]) metaCols.push(j); }
+  if(!metaCols.length) return {ok:false, reason:"no metadata columns found in the AOP header"};
+  let catIdx=metaCols.findIndex(j=>{ const t=metaRow[j].toLowerCase(); return t.includes("categor")&&!t.includes("sd"); });
+  if(catIdx<0) catIdx=metaCols.findIndex(j=>metaRow[j].toLowerCase().includes("categor"));
+  const chIdx=metaCols.findIndex(j=>{ const m=metaRow[j].toLowerCase(); return m.includes("channel")||m.includes("sub"); });
+  const totalFound = chIdx>=0 && data.some(r=>{ const v=cleanStr(r[chIdx]).toUpperCase(); return v==="TOTAL"; });
+  const blockOrder=[["revenue",s=>s==="revenue"],["spend",s=>s==="spend"],
+    ["rev_share",s=>s.includes("revenue")&&s.includes("share")],["spend_share",s=>s.includes("spend")&&s.includes("share")],
+    ["roas",s=>s.includes("roas")],["mom_growth_rev",s=>s.includes("growth")&&s.includes("revenue")],
+    ["mom_growth_spend",s=>s.includes("growth")&&s.includes("spend")],["growth_gap",s=>s.includes("gap")],
+    ["cqgr",s=>s.includes("cqgr")],["fy12",s=>s.includes("12-m")||s.includes("12m")],["fy6",s=>s.includes("6-m")||s.includes("6m")],
+    ["yoy",s=>s.includes("yoy")],["seasonal",s=>s.includes("seasonal")]];
+  const classify=lab=>{ const s=lab.toLowerCase(); for(const [n,f] of blockOrder) if(f(s)) return n; return null; };
+  const starts=[]; for(let j=0;j<ncol;j++) if(labelRow[j]) starts.push([labelRow[j],j]);
+  const long=[];
+  starts.forEach(([lab,j0],k)=>{
+    const j1=(k+1<starts.length)?starts[k+1][1]-1:ncol-1;
+    const kind=classify(lab);
+    if(kind==="fy12"||kind==="fy6"||kind==="yoy"||kind==="seasonal") return;
+    if(kind===null){ if(!/\d{4}\s*-\s*\d{4}/.test(lab)) warn.push("unknown AOP block \u2018"+lab+"\u2019 \u2014 skipped"); return; }
+    const hdrs=[]; for(let j=j0;j<=j1;j++) hdrs.push(metaRow[j]||"");
+    const monthCols={};
+    for(let kk=0;kk<hdrs.length;kk++){ const mk=pMonthLabel(hdrs[kk]); if(mk) monthCols[j0+kk]=mk; }
+    if(!Object.keys(monthCols).length) return;
+    const isPct=["rev_share","spend_share","mom_growth_rev","mom_growth_spend","growth_gap"].includes(kind);
+    for(let ri=0;ri<data.length;ri++){
+      const cat=catIdx>=0?cleanStr(data[ri][catIdx]):"";
+      const ch=chIdx>=0?cleanStr(data[ri][chIdx]):"";
+      const chT=ch.toUpperCase().trim();
+      if(totalFound && chT!=="TOTAL") continue;
+      if(cat.toLowerCase().startsWith("total")) continue;
+      for(const cj of Object.keys(monthCols)){
+        const v=pNum(data[ri][cj]); if(isNaN(v)) continue;
+        long.push({cat, block:kind, month:monthCols[cj], value: isPct?v/100:v});
+      }
+    }
+  });
+  const agg={};
+  for(const r of long){ if(!/^\d{4}-\d{2}$/.test(r.month)) continue;
+    const a=agg[r.month]||(agg[r.month]={revenue:NaN,spend:NaN});
+    if(r.block==="revenue") a.revenue=(isNaN(a.revenue)?0:a.revenue)+r.value;
+    if(r.block==="spend") a.spend=(isNaN(a.spend)?0:a.spend)+r.value; }
+  const labels=Object.keys(agg).sort();
+  const revenue=labels.map(m=>agg[m].revenue), spend=labels.map(m=>agg[m].spend);
+  return {ok: labels.length>0, reason: labels.length? "" : "no month-labelled revenue/spend blocks parsed",
+    labels, revenue, spend, warn};
+}
+
+function _npsStats(vals){
+  const s=[]; for(const v of vals){ const n=pNum(v); if(isNaN(n)||n<0||n>10) continue; s.push(n); }
+  const n=s.length; const dist=new Array(11).fill(0);
+  let p=0,dt=0; for(const x of s){ dist[Math.round(x)]++; if(x>=9)p++; if(x<=6)dt++; }
+  if(!n) return {n:0,nps:NaN,avg:NaN,promoters:NaN,detractors:NaN,dist};
+  return {n, nps:p/n*100-dt/n*100, avg:s.reduce((a,b)=>a+b,0)/n, promoters:p/n, detractors:dt/n, dist};
+}
+function C_NPS(res){
+  const rows=res.rows;
+  const b=_npsStats(rows.map(r=>r.brand_score));
+  const p=_npsStats(rows.map(r=>r.product_score));
+  const dimsMap={};
+  for(const r of rows){ const cat=cleanStr(r.category); if(!cat) continue;
+    (dimsMap[cat]=dimsMap[cat]||{b:[],p:[]}).b.push(r.brand_score); dimsMap[cat].p.push(r.product_score); }
+  let dims=Object.entries(dimsMap).map(([cat,a])=>({cat, n:a.b.length, bn:_npsStats(a.b).nps}))
+    .filter(d=>d.n>=5).sort((a,b)=>b.n-a.n).slice(0,8)
+    .map(d=>({label:d.cat.length>26?d.cat.slice(0,26):d.cat, value:d.bn, val:(d.bn>=0?"+":"")+d.bn.toFixed(1)+" (n="+fmtI(d.n)+")", cat:d.cat,
+      color:d.bn>=40?"#0b6e4f":"#d97706"}));
+  const compMap={};
+  for(const r of rows){ const src=cleanStr(r.migrated_from); if(!src) continue; compMap[src]=(compMap[src]||0)+1; }
+  let comp=Object.entries(compMap).map(([s,c])=>({source:s, customers:c, is_first_time:/first/i.test(s)}))
+    .sort((a,b)=>b.customers-a.customers).slice(0,6)
+    .map(x=>[x.source, fmtI(x.customers), x.is_first_time?'<span class="pill g">first-time</span>':'<span class="pill n">switcher</span>']);
+  const voc=[];
+  for(const r of rows){
+    const cat=cleanStr(r.category)||cleanStr(r.variant)||"\u2014";
+    for(const [kind,col,cls] of [["like","like_product","g"],["dislike","dislike_product","r"]]){
+      const txt=cleanStr(r[col]);
+      if(txt && !["no complaints","none","nan",""].includes(txt.toLowerCase()))
+        voc.push(['<span class="pill '+cls+'">'+kind+'</span>', cat, txt.slice(0,180)]);
+      if(voc.length>=90) break;
+    }
+    if(voc.length>=90) break;
+  }
+  const cuts=[];
+  if(b.n){ cuts.push({text:"Brand NPS from your upload: "+(b.nps>=0?"+":"")+b.nps.toFixed(1)+" (n="+fmtI(b.n)+", promoters "+fmtP(b.promoters)+", detractors "+fmtP(b.detractors)+").", tone:b.nps>=50?"pos":"warn"});
+    cuts.push({text:"Product NPS: "+(p.nps>=0?"+":"")+p.nps.toFixed(1)+" (n="+fmtI(p.n)+").", tone:p.nps>=50?"pos":"info"}); }
+  if(dims.length){ const best=[...dims].sort((a,b)=>b.value-a.value)[0], worst=[...dims].sort((a,b)=>a.value-b.value)[0];
+    cuts.push({text:"Highest NPS category: "+best.cat+" ("+(best.value>=0?"+":"")+best.value.toFixed(1)+", n="+fmtI(best.n)+"); lowest: "+worst.cat+" ("+(worst.value>=0?"+":"")+worst.value.toFixed(1)+").", tone:"info"}); }
+  if(comp.length){ const f=comp.find(x=>!x[2].includes("first")); const firsts=comp.filter(x=>x[2].includes("first"));
+    if(f) cuts.push({text:"Most common brand migrated from: "+f[0]+" ("+f[1]+" customers).", tone:"info"}); }
+  return {b,p,dims,comp,voc,cuts,warn:[]};
+}
+
+function C_CS(res){
+  const rows=res.rows; const n=rows.length;
+  if(!n) return {kpis:[{label:"CS tickets",value:"0",sub:"no rows"}], table:{headers:["Top failure reason","Tickets","Share"],rows:[]}, voc:[], cuts:[], warn:["no rows parsed"]};
+  let resolved=0; for(const r of rows){ const s=cleanStr(r.chat_status).toLowerCase(); if(["resolved","closed","solved"].includes(s)) resolved++; }
+  const reasonMap={};
+  for(const r of rows){ const k=cleanStr(r.failure_reason)||"(none)"; reasonMap[k]=(reasonMap[k]||0)+1; }
+  const reasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
+  const topReason=reasons[0]?reasons[0][0]:"\u2014";
+  const fh=[];
+  for(const r of rows){ const f=pNum(r.fulfilled_time), dl=pNum(r.delivery_time);
+    // dates: fulfilled_time/delivery_time are datetimes -> hours
+    const fd=pDateStr(r.fulfilled_time), dd=pDateStr(r.delivery_time);
+    if(fd&&dd){ const h=daysDiff(fd,dd)*24 + ((parseFloat(r.delivery_time)||0)-(parseFloat(r.fulfilled_time)||0)); fh.push(h); } }
+  const fhv=fh.filter(x=>isFinite(x));
+  const med = fhv.length? quantile(fhv.sort((a,b)=>a-b),0.5) : NaN;
+  const over = fhv.length? fhv.filter(x=>x>72).length/fhv.length : NaN;
+  const kpis=[
+    {label:"CS tickets", value:fmtI(n), sub:fmtP(resolved/n)+" resolved"},
+    {label:"Median fulfilment", value:isNaN(med)?"\u2014":med.toFixed(0)+" h", sub:isNaN(over)?"no fulfilment times":fmtP(over)+" over 72h"},
+    {label:"Top failure reason", value:topReason.length>26?topReason.slice(0,26)+"\u2026":topReason, sub:reasons[0]?fmtP(reasons[0][1]/n)+" of tickets":""}
+  ];
+  const table={headers:["Top failure reason","Tickets","Share"],
+    rows: reasons.slice(0,8).map(([k,c])=>[k, fmtI(c), fmtP(c/n)])};
+  const voc=[];
+  for(const r of rows){ const g=cleanStr(r.global_remark);
+    if(g && g.toLowerCase()!=="nan" && !isNoComplaint(g))
+      voc.push(['<span class="pill n">CS</span>', cleanStr(r.category)||"\u2014", g.slice(0,180)]);
+    if(voc.length>=12) break; }
+  const cuts=[{text:"Top CS failure reason in your upload: "+topReason+" ("+fmtP(reasons[0][1]/n)+" of "+fmtI(n)+" tickets).", tone:"warn"}];
+  if(!isNaN(over)) cuts.push({text:fmtP(over)+" of tickets took over 72h to fulfil (median "+med.toFixed(0)+"h).", tone:over>0.15?"warn":"info"});
+  return {kpis, table, voc, cuts, topReason, topShare:reasons[0]?reasons[0][1]/n:NaN, warn:[]};
+}
+function pDateStr(v){ const s=cleanStr(v); if(!s) return null; let m;
+  m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[,\s].*)?$/); if(m) return {y:+m[3],m:+m[2],d:+m[1]};
+  m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[,\s].*)?$/); if(m) return {y:+m[1],m:+m[2],d:+m[3]};
+  m=s.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})/); if(m){ const mon=MONTHS[m[1].slice(0,3).toLowerCase()]; if(mon) return {y:+m[3],m:mon,d:+m[2]}; }
+  return null; }
+function quantile(sorted,q){ if(!sorted.length) return NaN; const pos=(sorted.length-1)*q, lo=Math.floor(pos), hi=Math.ceil(pos);
+  return sorted[lo]+(sorted[hi]-sorted[lo])*(pos-lo); }
+
+function parsePriceNote(note){
+  const s=cleanStr(note); if(!s||s.toUpperCase()==="#REF!") return [null,null];
+  if(/new\s+.*variant\s+launch/i.test(s)) return ["New Variant",null];
+  const m=s.match(/(decreased|increased|same)\s*-?\s*price\s*revision\s*[\-\u2013\u2014]?\s*(.*)/i);
+  if(m){ let d=null; const dm=(m[2]||"").match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+),?\s+(\d{4})/);
+    if(dm){ const dt=pDate(dm[1]+" "+dm[2]+", "+dm[3]); if(dt) d=dt.y+"-"+String(dt.m).padStart(2,"0")+"-"+String(dt.d).padStart(2,"0"); }
+    return [m[1][0].toUpperCase()+m[1].slice(1)+" Price", d]; }
+  const low=s.toLowerCase();
+  if(low.includes("increas")) return ["Increased Price",null];
+  if(low.includes("decreas")) return ["Decreased Price",null];
+  if(low.includes("same")) return ["Same Price",null];
+  return ["Other",null];
+}
+function C_FM(res, asOf){
+  const as=pDateStr(asOf); const rows=res.rows, headers=res.headers||[];
+  const winCols=[]; headers.forEach((h,j)=>{ const m=cleanStr(h).match(/^(\d{2,3})\s*days?\s*%?\s*$/i); if(m) winCols.push([j,parseInt(m[1],10), cleanStr(h).includes("%")]); });
+  if(!winCols.length) return {ok:false, reason:"no retention window columns found (e.g. \u201830 Days %\u2019)"};
+  const windows=[...new Set(winCols.map(w=>w[1]))].sort((a,b)=>a-b);
+  const warn=[]; let nSkus=0, totCust=0;
+  const perWin={}; windows.forEach(w=>perWin[w]={sum:0,n:0,immature:0});
+  const priceRefs={};
+  const rawRows=res.rawRows||[];
+  for(let ri=0;ri<rawRows.length;ri++){
+    const r=res.rows[ri], raw=rawRows[ri];
+    const sku=cleanStr(r.sku); const cust=pNum(r.customers);
+    if(!sku){ continue; }
+    const onb=pDateStr(r.onb_date);
+    if(!onb){ warn.push("unparseable onboarding date \u2014 row skipped"); continue; }
+    nSkus++; totCust+=isNaN(cust)?0:cust;
+    const [ctype,cdate]=parsePriceNote(r.price_note);
+    if(ctype && !priceRefs[sku]) priceRefs[sku]={sku, product:cleanStr(r.variant), change_type:ctype, date:cdate};
+    for(const [wj,w,pctFlag] of winCols){
+      const mad = as? daysDiff(onb,as) : 10000;
+      if(w<=mad){
+        const cell=pNum(raw[wj]);
+        if(!isNaN(cell)){ perWin[w].sum+= (pctFlag? cell/100 : cell); perWin[w].n++; }
+      } else perWin[w].immature++;
+    }
+  }
+  const fm={headers:["Window","Avg retention","Mature SKUs",""], rows:[]};
+  let pending=[];
+  for(const w of windows){
+    const pw=perWin[w];
+    if(pw.n>0){
+      if(pending.length){ fm.rows.push([pending.join(" / ")+" days",'<span class="pill n">N/A</span>',"\u2014","0 mature \u2014 not yet observable"]); pending=[]; }
+      fm.rows.push([w+" days", fmtPAuto(pw.sum/pw.n), pw.n+" / "+nSkus, '<span class="pill g">mature</span>']);
+    } else pending.push(w);
+  }
+  if(pending.length) fm.rows.push([pending.join(" / ")+" days",'<span class="pill n">N/A</span>',"\u2014","0 mature \u2014 not yet observable"]);
+  const aRows=Object.values(priceRefs).slice(0,8).map(p=>[p.sku,
+    p.change_type==="Increased Price"?'<span class="pill r">Increased</span>':'<span class="pill n">'+String(p.change_type).slice(0,22)+'</span>',
+    p.date||"\u2014"]);
+  const cuts=[];
+  const mature=windows.filter(w=>perWin[w].n>0);
+  if(mature.length){ const best=mature.map(w=>[w,perWin[w].sum/perWin[w].n]).sort((a,b)=>b[1]-a[1])[0];
+    cuts.push({text:"Strongest mature window in your upload: "+best[0]+"d at "+fmtPAuto(best[1])+" average across "+perWin[best[0]].n+" SKUs.", tone:"info"}); }
+  const imm=windows.filter(w=>perWin[w].n===0);
+  if(imm.length) cuts.push({text:imm.length+" window(s) not yet mature (onb + window > as-of) \u2014 shown as N/A, never 0%.", tone:"info"});
+  if(aRows.length) cuts.push({text:aRows.length+" explicit price revision(s) parsed from the sheet notes (Source A).", tone:"info"});
+  if(warn.length) cuts.push({text:warn.length+" row(s) skipped (unparseable dates).", tone:"warn"});
+  return {ok:true, fm, aRows, windows, nSkus, totCust, cuts, warn};
+}
+
+function C_NTC(res, asOf){
+  const as=pDateStr(asOf); const rows=res.rows;
+  const orderCols=[["sec","2nd order"],["third","3rd order"],["fourth","4th order"],["fifth","5th order"],["sixth","6th order"]];
+  const d=[]; let bad=0;
+  for(const r of rows){
+    let cm=pMonthLabel(r.cohort) || monthOf(pDateStr(r.cohort));
+    if(!cm){ bad++; continue; }
+    const row={cohort:cm, first:pNum(r.first_order)};
+    for(const [pref] of orderCols){ row[pref+"_pct"]=pPct(r[pref+"_pct"]); row[pref+"_order"]=pNum(r[pref+"_order"]); row["avg_"+pref]=pNum(r["avg_days_"+pref]); }
+    d.push(row);
+  }
+  const matD=d.filter(r=>{ const cs={y:+r.cohort.slice(0,4),m:+r.cohort.slice(5),d:1}; return as? daysDiff(cs,as)>=90 : false; });
+  const wavg=(pc,wcol)=>{ let sw=0,sv=0; for(const r of matD){ const w=isNaN(r[wcol])?0:r[wcol]; if(w>0 && !isNaN(r[pc])){ sw+=w; sv+=r[pc]*w; } } return sw?sv/sw:NaN; };
+  const curve=[]; const colors=["#0b6e4f","#2f8f6b","#5aa787","#8cc4a5","#bfe0cd"];
+  orderCols.forEach(([pref,lab],i)=>{ const v=wavg(pref+"_pct",pref+"_order");
+    if(!isNaN(v)) curve.push({label:lab, value:v, vlabel:fmtP(v), tip:"avg "+lab+" rate across "+fmtI(matD.length)+" mature cohorts", color:colors[i]}); });
+  const heat={xlabels:orderCols.map(c=>c[1]), ylabels:d.map(r=>r.cohort),
+    vals:d.map(r=>orderCols.map(([pref])=>isNaN(r[pref+"_pct"])?null:Math.round(r[pref+"_pct"]*10000)/10000)), max:1};
+  const newC=matD.length? matD.reduce((a,r)=>a+(isNaN(r.first)?0:r.first),0) : NaN;
+  const kpis=[
+    {label:"Cohorts", value:fmtI(d.length), sub:fmtI(matD.length)+" mature at 90 days"},
+    {label:"New customers (base)", value:isNaN(newC)?"\u2014":fmtI(newC), sub:"sum of mature first-order cohorts"},
+    {label:"Avg 2nd-order rate", value:fmtP(wavg("sec_pct","sec_order")), sub:"mature cohorts"},
+    {label:"Avg 3rd-order rate", value:fmtP(wavg("third_pct","third_order")), sub:"mature cohorts"}
+  ];
+  const cuts=[];
+  const s2=wavg("sec_pct","sec_order"), s3=wavg("third_pct","third_order");
+  if(!isNaN(s2)) cuts.push({text:"Mature cohorts in your upload convert to a 2nd order at "+fmtP(s2)+" (vs "+fmtP(s3)+" at 3rd) \u2014 "+fmtI(matD.length)+" cohorts after the 90-day maturity rule.", tone:"info"});
+  if(bad) cuts.push({text:bad+" row(s) with unparseable cohort labels \u2014 skipped.", tone:"warn"});
+  return {kpis, curve, heat, cuts, warn:[]};
+}
+
+function C_JOURNEY(res, asOfStr){
+  const rows=res.rows; const warn=[];
+  const asOf=asOfStr?pDateStr(asOfStr):null;
+  // normalize + dedupe to order level (primary line per order: largest qty, first row on ties)
+  let idx=0;
+  const items=rows.map(r=>{
+    let cat=cleanStr(r.category)||"(Uncategorized)";
+    let prod=cleanStr(r.product), sku=cleanStr(r.sku);
+    if(!prod) prod=sku; if(!sku) sku=prod;
+    const dt=pDateStr(r.order_date);
+    return {cust:cleanStr(r.customer_id), oid:cleanStr(r.order_id), dt, cat, prod,
+      qty:isNaN(pNum(r.quantity))?0:pNum(r.quantity), i:idx++};
+  }).filter(x=>x.cust && x.dt);
+  items.sort((a,b)=> a.cust<b.cust?-1:a.cust>b.cust?1:(a.dt.y-b.dt.y)||(a.dt.m-b.dt.m)||(a.dt.d-b.dt.d)||(a.oid<b.oid?-1:a.oid>b.oid?1:a.i-b.i));
+  // group by (cust, date, oid) -> primary line
+  const orders=[]; let cur=null;
+  for(const it of items){
+    const k=it.cust+"|"+it.dt.y+"-"+it.dt.m+"-"+it.dt.d+"|"+it.oid;
+    if(!cur||cur.key!==k){ if(cur) orders.push(cur); cur={key:k, lines:[it]}; }
+    else cur.lines.push(it);
+  }
+  if(cur) orders.push(cur);
+  const ordList=orders.map(o=>{
+    o.lines.sort((a,b)=> b.qty-a.qty || a.i-b.i);
+    const p=o.lines[0];
+    return {cust:p.cust, dt:p.dt, cat:p.cat, prod:p.prod, nLines:o.lines.length};
+  });
+  if(items.length>ordList.length) warn.push((items.length-ordList.length)+" extra line(s) in multi-line orders \u2014 using the PRIMARY line (largest qty) per order");
+  // per-customer sequence
+  const byCust={};
+  for(const o of ordList){ (byCust[o.cust]=byCust[o.cust]||[]).push(o); }
+  let nRepeat=0;
+  const seq={};
+  for(const c of Object.keys(byCust)){ const arr=byCust[c]; if(arr.length>=2) nRepeat++;
+    arr.forEach((o,i)=>{ o.seq=i+1; o.gap=i? daysDiff(arr[i-1].dt,o.dt) : null; seq[c+"|"+(i+1)]=o; }); }
+  // migration (category): gained/lost
+  const gained={}, lost={};
+  for(const c of Object.keys(byCust)){ const arr=byCust[c]; if(arr.length<2) continue;
+    const f=arr[0], s=arr[1];
+    if(s.cat!==f.cat){ gained[s.cat]=(gained[s.cat]||0)+1; lost[f.cat]=(lost[f.cat]||0)+1; } }
+  const ents=new Set([...Object.keys(gained),...Object.keys(lost)]);
+  const net=[...ents].map(e=>({entity:e, g:gained[e]||0, l:lost[e]||0, net:(gained[e]||0)-(lost[e]||0)}))
+    .sort((a,b)=>Math.abs(b.net)-Math.abs(a.net)).slice(0,12);
+  // V2V/V2C by entry category
+  const vmap={}; let qual=0,v2v=0,v2c=0;
+  for(const c of Object.keys(byCust)){ const arr=byCust[c]; if(arr.length<2) continue;
+    const f=arr[0], s=arr[1]; qual++;
+    const V = f.prod===s.prod, C = f.cat===s.cat;
+    if(V) v2v++; if(C) v2c++;
+    const m=(vmap[f.cat]=vmap[f.cat]||{q:0,v:0,c:0}); m.q++; if(V) m.v++; if(C) m.c++; }
+  const v2cRows=Object.entries(vmap).sort((a,b)=>b[1].q-a[1].q)
+    .map(([k,m])=>[k, fmtI(m.q), fmtP(m.v/m.q), fmtP(m.c/m.q)]);
+  if(qual) v2cRows.push(["<b>Overall</b>", "<b>"+fmtI(qual)+"</b>", "<b>"+fmtP(v2v/qual)+"</b>", "<b>"+fmtP(v2c/qual)+"</b>"]);
+  // same-category retention 30/60/90 (customer-weighted, mature only)
+  const jr={}; [30,60,90].forEach(w=>jr[w]={ret:0,n:0});
+  for(const c of Object.keys(byCust)){ const arr=byCust[c]; if(arr.length<2) continue;
+    const f=arr[0];
+    for(const w of [30,60,90]){
+      const mature = asOf? daysDiff(f.dt,asOf)>=w : true;
+      if(!mature) continue;
+      jr[w].n++;
+      if(arr.some(o=>o.seq>1 && o.cat===f.cat && daysDiff(f.dt,o.dt)<=w)) jr[w].ret++;
+    }
+  }
+  const jrItems=[30,60,90].map(w=> jr[w].n? {label:w+"d", value:jr[w].ret/jr[w].n, vlabel:fmtP(jr[w].ret/jr[w].n),
+    tip:"same-category repeat within "+w+" days (mature first-orders)"} : null).filter(Boolean);
+  const kpis=[
+    {label:"Customers", value:fmtI(Object.keys(byCust).length), sub:fmtI(ordList.length)+" orders"},
+    {label:"Repeat buyers", value:fmtI(nRepeat), sub:fmtP(nRepeat/Object.keys(byCust).length)+" repeat rate"},
+    {label:"V2V %", value:qual?fmtP(v2v/qual):"\u2014", sub:"same variant on 2nd order"},
+    {label:"V2C %", value:qual?fmtP(v2c/qual):"\u2014", sub:"same category, any variant"}
+  ];
+  const cuts=[];
+  if(qual){ cuts.push({text:"From your journey CSV: "+fmtI(qual)+" customers have a 2nd order \u2014 V2V "+fmtP(v2v/qual)+" vs V2C "+fmtP(v2c/qual)+" (separate formulas).", tone:"info"}); }
+  const bigNet=net.filter(x=>x.net!==0).sort((a,b)=>Math.abs(b.net)-Math.abs(a.net))[0];
+  if(bigNet) cuts.push({text:"Largest net migration: "+bigNet.entity+" ("+(bigNet.net>0?"+":"")+bigNet.net+" customers, gained "+bigNet.g+" / lost "+bigNet.l+").", tone:bigNet.net<0?"warn":"pos"});
+  if(jrItems.length) cuts.push({text:"Same-category repeat within 90 days: "+fmtP(jr[90].ret/jr[90].n)+" of mature first-orders.", tone:"info"});
+  if(warn.length) cuts.push({text:warn.filter(Boolean)[0], tone:"warn"});
+  return {net, v2c:{headers:["Category","Qualifying","V2V %","V2C %"], rows:v2cRows}, jr:jrItems, kpis, cuts, warn:warn.filter(Boolean),
+    nCust:Object.keys(byCust).length, nOrd:ordList.length, qual};
+}
+
+function C_PRICE(res, threshold){
+  const rows=res.rows; const th=threshold==null?0.05:threshold;
+  const g={};
+  let skipped=0;
+  for(const r of rows){
+    const q=pNum(r.quantity); if(isNaN(q)||q<=0) continue;
+    const dt=pDateStr(r.order_date); let m=dt?monthOf(dt):pMonthLabel(r.order_date);
+    if(!m){ skipped++; continue; }
+    const sku=cleanStr(r.sku)||cleanStr(r.product)||"(unknown)";
+    const prod=cleanStr(r.product)||sku;
+    const v=pNum(r.revenue); if(isNaN(v)) continue;
+    const k=sku+"|"+m; const o=g[k]||(g[k]={sku, prod, month:m, rev:0, qty:0});
+    o.rev+=v; o.qty+=q;
+  }
+  const bySku={};
+  for(const k of Object.keys(g)){ const o=g[k]; (bySku[o.sku]=bySku[o.sku]||[]).push(o); }
+  const flags=[];
+  for(const sku of Object.keys(bySku)){
+    const arr=bySku[sku].sort((a,b)=>a.month<b.month?-1:1);
+    for(let i=1;i<arr.length;i++){
+      const cur=arr[i], prev=arr[i-1];
+      const up=cur.rev/cur.qty, pp=prev.rev/prev.qty;
+      const ch=(up-pp)/pp;
+      if(ch>th) flags.push({sku, prod:cur.prod, month:cur.month, unit:up, prev:pp, change:ch, dir:"Increase"});
+      else if(ch<-th) flags.push({sku, prod:cur.prod, month:cur.month, unit:up, prev:pp, change:ch, dir:"Decrease"});
+    }
+  }
+  flags.sort((a,b)=>Math.abs(b.change)-Math.abs(a.change));
+  const bRows=flags.slice(0,40).map(f=>[f.sku, f.month, "\u20b9"+f.prev.toFixed(2)+" \u2192 \u20b9"+f.unit.toFixed(2),
+    '<span class="pill '+(f.change>0?"g":"r")+'">'+fmtP(f.change,1,true)+'</span>']);
+  const nUp=flags.filter(f=>f.dir==="Increase").length, nDn=flags.filter(f=>f.dir==="Decrease").length;
+  const movers=flags.slice(0,10).map(f=>({label:f.sku.length>30?f.sku.slice(0,30):f.sku, value:Math.abs(f.change),
+    val:fmtP(f.change,1,true), sku:f.sku, tip:f.month+": \u20b9"+f.prev.toFixed(2)+" \u2192 \u20b9"+f.unit.toFixed(2)+" ("+f.dir.toLowerCase()+")",
+    color:f.change>0?"#1a7f37":"#c0392b"}));
+  const kpis=[
+    {label:"Detected increases (Source B)", value:fmtI(nUp), sub:"beyond +"+fmtP(th)},
+    {label:"Detected decreases (Source B)", value:fmtI(nDn), sub:"beyond \u2212"+fmtP(th)},
+    {label:"Realized-price signals", value:fmtI(flags.length), sub:"SKU-month MoM moves"}
+  ];
+  const cuts=[];
+  if(flags.length){ const f=flags[0];
+    cuts.push({text:"Biggest realized-price move: "+f.sku+" ("+fmtP(f.change,1,true)+" MoM in "+f.month+", \u20b9"+f.prev.toFixed(2)+" \u2192 \u20b9"+f.unit.toFixed(2)+"). Realized prices include discount/promo effects \u2014 not list/MRP.", tone:"info"}); }
+  cuts.push({text:nUp+" increase(s) and "+nDn+" decrease(s) beyond the \u00b1"+fmtP(th)+" threshold across "+Object.keys(bySku).length+" SKUs.", tone:"info"});
+  if(skipped) cuts.push({text:skipped+" row(s) without a parseable date \u2014 excluded from MoM detection.", tone:"warn"});
+  return {bRows, movers, kpis, cuts, nUp, nDn, warn:[]};
+}
+
+function C_INTRA(res){
+  const rows=res.rows;
+  const d=[];
+  for(const r of rows){ const dt=pDateStr(r.order_date); const v=pNum(r.revenue);
+    if(!dt||isNaN(v)) continue;
+    d.push({dt, sku:cleanStr(r.sku)||cleanStr(r.product)||"(unknown)", prod:cleanStr(r.product)||cleanStr(r.sku), rev:v}); }
+  if(!d.length) return {ok:false, reason:"no parseable rows with dates and revenue"};
+  let start=d[0].dt, end=d[0].dt;
+  for(const x of d){ if(daysDiff(start,x.dt)<0) start=x.dt; if(daysDiff(end,x.dt)<0) end=x.dt; }
+  const midDays=Math.round(daysDiff(start,end)/2);
+  const in1={}, in2={};
+  for(const x of d){ if(daysDiff(start,x.dt)<=midDays) in1[x.sku]=(in1[x.sku]||0)+x.rev; else in2[x.sku]=(in2[x.sku]||0)+x.rev; }
+  const t1=Object.values(in1).reduce((a,b)=>a+b,0), t2=Object.values(in2).reduce((a,b)=>a+b,0);
+  const skus=new Set([...Object.keys(in1),...Object.keys(in2)]);
+  const sizeRe=/-(\d{2,4})$/, unitRe=/(\d+(?:\.\d+)?)\s*(ml|g|kg|l)\b/i;
+  const grams={};
+  const sizeOf = (sku,prod)=>{ let s=sizeRe.exec(sku); if(s) return {n:parseInt(s[1],10), u:""};
+    const u=unitRe.exec(prod||""); if(u) return {n:parseFloat(u[1]), u:u[2]}; return null; };
+  for(const sku of skus){
+    const prod=(d.find(x=>x.sku===sku)||{}).prod||"";
+    const sz=sizeOf(sku,prod); const gname=sz? sz.n+(sz.u||"") : "(unlabelled size)";
+    const a=(in1[sku]||0)/(t1||1), b=(in2[sku]||0)/(t2||1);
+    const g=(grams[gname]=grams[gname]||{a:0,b:0}); g.a+=a; g.b+=b;
+  }
+  const rowsOut=Object.entries(grams).map(([k,g])=>[k, fmtP(g.a), fmtP(g.b), fmtP(g.b-g.a,1,true),
+    (in1[k]?"":"\u2192")+" "]).sort((a,b)=>Math.abs(parseFloat(b[3])-Math.abs(parseFloat(a[3])))).slice(0,12);
+  const cuts=[];
+  const moved=Object.entries(grams).map(([k,g])=>[k, g.b-g.a]).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
+  if(moved.length){ const up=moved.find(x=>x[1]>0), dn=moved.find(x=>x[1]<0);
+    if(up) cuts.push({text:"In your upload, "+up[0]+" grammage gained the most share: "+fmtP(up[1],1,true)+" across the window halves.", tone:"info"});
+    if(dn) cuts.push({text:dn[0]+" grammage lost the most share: "+fmtP(dn[1],1,true)+".", tone:"warn"}); }
+  return {ok:true, headers:["Grammage","Share 1st half","Share 2nd half","\u0394",""], rows:rowsOut,
+    window:[lblMonth2(start), lblMonth2(end)], nSkus:skus.size, cuts, warn:[]};
+}
+function lblMonth2(dt){ const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return MON[dt.m-1]+" "+dt.y; }
+
+/* ---------- panel + wiring ---------- */
+const COMPUTE = { sales:C_SALES, category_sales:C_INTRA, nps:C_NPS, cs:C_CS,
+  retention_fm:C_FM, order_movement:C_NTC, journey:C_JOURNEY, price:C_PRICE, aop:C_AOP, any:null };
+let _instances={};
+function attach(panelId, specs, onLive, onReset){
+  const el=S(panelId); if(!el) return;
+  const inst={loaded:{}, parts:{}, specs};
+  _instances[panelId]=inst;
+  let html='';
+  for(const sp of specs){
+    html+='<div class="lrow"><div class="llab">'+escAttr(sp.label)+(sp.hint?'<span class="hint">'+escAttr(sp.hint)+'</span>':'')+'</div>';
+    html+='<input type="file" accept=".csv,.txt,text/csv" id="lv_file_'+sp.key+'">';
+    if(sp.paste) html+='<button class="btn" id="lv_pastebtn_'+sp.key+'">\u2325 paste text</button><textarea id="lv_paste_'+sp.key+'" style="display:none" placeholder="Paste CSV rows here\u2026"></textarea>';
+    html+='<span class="lstat" id="lv_stat_'+sp.key+'"></span></div>';
+  }
+  html+='<div class="lrow"><button class="btn" id="lv_reset_'+panelId+'">\u21ba Reset to bundled data</button><span class="lstat">Uploads are parsed &amp; analyzed in your browser \u2014 nothing is uploaded anywhere.</span></div>';
+  html+='<div class="banner" id="lv_banner_'+panelId+'"></div>';
+  el.innerHTML=html;
+  for(const sp of specs){
+    S("lv_file_"+sp.key).addEventListener("change", e=>{
+      const f=e.target.files && e.target.files[0]; if(!f) return;
+      const rd=new FileReader();
+      rd.onload=()=>handle(sp, rd.result, f.name);
+      rd.onerror=()=>setStat(sp, "err", "\u2717 could not read file");
+      rd.readAsText(f);
+    });
+    if(sp.paste){
+      S("lv_pastebtn_"+sp.key).onclick=()=>{ const ta=S("lv_paste_"+sp.key); ta.style.display=ta.style.display==="none"?"":"none"; };
+    }
+  }
+  inst.reset=()=>{
+    inst.loaded={}; inst.parts={};
+    for(const sp of specs){ S("lv_stat_"+sp.key).textContent=""; const fi=S("lv_file_"+sp.key); if(fi) fi.value=""; }
+    S("lv_banner_"+panelId).classList.remove("on");
+    onReset();
+  };
+  S("lv_reset_"+panelId).onclick=inst.reset;
+  function setStat(sp, cls, msg){ const st=S("lv_stat_"+sp.key); st.textContent=msg; st.className="lstat "+cls; }
+  function handle(sp, text, fname){
+    let out;
+    const src=sp.src||sp.key;
+    if(src==="aop"){ const rows=parseCSV(text); out={ok: rows.length>0, raw:rows, n:rows.length}; if(!out.ok) out.reason="empty file"; }
+    else if(src==="any"){ out={ok:true, profile:profileOf(parseCSV(text))}; }
+    else out=loadSource(src, text);
+    if(!out.ok){ setStat(sp, "err", "\u2717 "+(out.reason||"could not parse")); inst.loaded[sp.key]=null; return; }
+    inst.loaded[sp.key]=out;
+    setStat(sp, "ok", "\u2713 "+fmtI(out.n)+" rows \u00b7 "+fname);
+    recompute();
+  }
+  function recompute(){
+    inst.parts={};
+    const anyLoaded=Object.keys(inst.loaded).filter(k=>inst.loaded[k]);
+    if(!anyLoaded.length) return;
+    for(const sp of specs){
+      const L=inst.loaded[sp.key]; if(!L) continue;
+      if(sp.key==="any"){ inst.parts.any={profile:L.profile}; continue; }
+      const fn=COMPUTE[sp.key];
+      const _asOf=(sp.params&&sp.params.asOf)||new Date().toISOString().slice(0,10);
+      if(sp.key==="retention_fm") inst.parts.fm=C_FM(L, _asOf);
+      else if(sp.key==="order_movement") inst.parts.n=C_NTC(L, _asOf);
+      else if(sp.key==="journey") inst.parts.journey=C_JOURNEY(L, _asOf);
+      else if(sp.key==="price") inst.parts.price=C_PRICE(L, sp.params&&sp.params.threshold);
+      else if(sp.key==="aop") inst.parts.aop=C_AOP(L);
+      else if(sp.key==="category_sales") inst.parts.intra=C_INTRA(L);
+      else if(sp.key==="sales") inst.parts.sales=C_SALES(L);
+      else if(sp.key==="nps") inst.parts.nps=C_NPS(L);
+      else if(sp.key==="cs") inst.parts.cs=C_CS(L);
+    }
+    const bn=S("lv_banner_"+panelId);
+    bn.classList.add("on");
+    bn.innerHTML="\u26a1 <b>Live mode</b> \u2014 this page is now computed in your browser from: "+anyLoaded.join(", ")+" . Charts, tables and deep cuts below reflect <b>your</b> CSV(s); hit \u2018Reset to bundled data\u2019 to go back.";
+    onLive(inst.parts);
+  }
+  // expose for testing
+  inst.handle=handle; inst.recompute=recompute; inst.inst=inst;
+  window.__LIVE_INST=window.__LIVE_INST||{}; window.__LIVE_INST[panelId]=inst;
+}
+function renderProfile(cardEl, profile){
+  if(!cardEl) return;
+  if(!profile){ cardEl.style.display="none"; cardEl.innerHTML=""; return; }
+  cardEl.style.display="";
+  const statRows=profile.stats.map(s=>[s.name, String(s.ne), String(s.uniq), s.top.map(t=>t).join(" \u00b7 ")]);
+  cardEl.innerHTML='<h3>\ud83d\udcc2 Generic analysis of your CSV ('+fmtI(profile.n)+' rows \u00d7 '+profile.headers.length+' cols)</h3>'+
+    '<div class="note" style="margin-top:0">This file did not match the page\u2019s expected schema, so here\u2019s a structural profile instead of the page\u2019s own metrics.</div>'+
+    '<div id="pv_stats"></div><div class="note" style="margin:10px 0 4px">Preview (first 50 rows)</div><div id="pv_rows"></div>';
+  const statsEl=cardEl.querySelector("#pv_stats"), rowsEl=cardEl.querySelector("#pv_rows");
+  table(statsEl, {headers:["Column","Non-empty","Unique","Most common"], rows:statRows, num:[1,2]});
+  rowsEl.innerHTML='<div class="tscroll"><table class="tbl"></table></div>';
+  const tb=rowsEl.querySelector("table");
+  tb.innerHTML="<tr>"+profile.headers.map(h=>"<th>"+escAttr(h)+"</th>").join("")+"</tr>"+
+    profile.preview.map(r=>"<tr>"+r.map(c=>"<td>"+escAttr(c)+"</td>").join("")+"</tr>").join("");
+}
+function escAttr(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+return { parseCSV, loadSource, profileOf, C_SALES, C_AOP, C_NPS, C_CS, C_FM, C_NTC, C_JOURNEY, C_PRICE, C_INTRA,
+  attach, renderProfile, pNum, pPct, pDateStr, pMonthLabel, normName, cleanStr, fmtP, fmtMoney, fmtI, lblToMonth };
+})();
+
+const BUNDLED = JSON.parse(JSON.stringify(DATA));
+function resetData(){ for(const k of Object.keys(DATA)) delete DATA[k]; Object.assign(DATA, JSON.parse(JSON.stringify(BUNDLED))); }
+function renderAll(){
+
+  kpis(S("kpis"), DATA.kpis);
+  vbars(S("c_net"), DATA.net, {height: 190});
+  table(S("c_v2c"), DATA.v2c);
+  if(DATA.intra) table(S("c_intra"), DATA.intra, {search:true}); else S("c_intra").innerHTML = "";
+  insights(S("cuts"), DATA.cuts);
+
+LIVE.renderProfile(S("profileCard"), DATA.profile);
+}
+LIVE.attach("livePanel", [{"key": "journey", "label": "Journey CSV (long form)", "hint": "customer_id, order_date, category (+ sku, product, quantity, order_id)"}, {"key": "category_sales", "label": "Category-scoped sales CSV", "hint": "order_date, category, revenue, sku — no customer ids"}, {"key": "any", "label": "Any other CSV", "hint": "generic structural analysis"}], function(l){
+
+  if(l.any) DATA.profile = l.any.profile;
+  if(l.journey){
+    DATA.net = l.journey.net.map(x=>({label:String(x.entity).length>26?String(x.entity).slice(0,26):String(x.entity), value:x.net,
+      tip:LIVE.fmtI(x.g)+" gained · "+LIVE.fmtI(x.l)+" lost", vlabel:(x.net>=0?"+":"−")+Math.abs(x.net),
+      color:x.net>=0?"#1a7f37":"#c0392b"}));
+    DATA.v2c = l.journey.v2c;
+    DATA.kpis = l.journey.kpis;
+  }
+  if(l.intra && l.intra.ok){
+    DATA.intra = {headers:l.intra.headers, rows:l.intra.rows, num:[1,2,3], search:"Filter grammages…"};
+  }
+  if(l.journey || (l.intra&&l.intra.ok)){
+    const cuts=[];
+    if(l.journey) cuts.push(...l.journey.cuts);
+    if(l.intra&&l.intra.ok) cuts.push(...l.intra.cuts);
+    DATA.cuts = cuts;
+  }
+
+ renderAll(); }, function(){ resetData(); renderAll(); });
+renderAll();
+
+</script>
+</body>
+</html>

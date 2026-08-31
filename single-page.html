@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retention &amp; Category Intelligence — Final Dashboard</title>
+<style>
+  :root{
+    --bg:#f6f8fa; --card:#ffffff; --ink:#1f2933; --mut:#6b7280; --line:#e5e7eb;
+    --acc:#0b6e4f; --red:#c0392b; --grn:#1a7f37; --blue:#1d4ed8; --chip:#eef7f2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  .layout{display:flex;min-height:100vh}
+  /* ---------- sidebar ---------- */
+  .side{width:252px;flex:0 0 252px;background:#fff;border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+  .side h1{font-size:15px;margin:0 0 2px;line-height:1.3}
+  .side .sub{font-size:11.5px;color:var(--mut);margin-bottom:14px}
+  .nav a{display:block;padding:7px 10px;border-radius:8px;text-decoration:none;color:var(--ink);font-size:13px;margin-bottom:2px}
+  .nav a:hover{background:#f1f5f9}
+  .nav a.active{background:var(--chip);color:var(--acc);font-weight:600}
+  .badge{margin-top:14px;font-size:11px;color:var(--mut);background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 10px;line-height:1.45}
+  /* ---------- main ---------- */
+  .main{flex:1;padding:22px 28px 60px;min-width:0}
+  .topbar{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  .topbar h2{margin:0;font-size:21px}
+  .chip{font-size:11px;background:var(--chip);color:var(--acc);border-radius:999px;padding:3px 10px;font-weight:600}
+  .cap{color:var(--mut);font-size:12.5px;margin:2px 0 18px;max-width:900px}
+  .page{display:none}
+  .page.active{display:block}
+  /* ---------- cards ---------- */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .kpi .l{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+  .kpi .v{font-size:21px;font-weight:700;margin-top:3px}
+  .kpi .s{font-size:11.5px;color:var(--mut);margin-top:2px}
+  .up{color:var(--grn);font-weight:600}.dn{color:var(--red);font-weight:600}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+  .card h3{margin:0 0 10px;font-size:14.5px}
+  .card .note{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.4}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+  /* ---------- tables ---------- */
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th{text-align:left;color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:6px 8px;border-bottom:1px solid #f1f5f9}
+  tr:last-child td{border-bottom:none}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{color:var(--ink)}
+  th.sorted{color:var(--acc)}
+  .search{width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;margin-bottom:8px}
+  .vocscroll{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+  /* ---------- bars ---------- */
+  .hbar{display:grid;grid-template-columns:150px 1fr 74px;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
+  .hbar .track{background:#f1f5f9;border-radius:6px;height:18px;position:relative;overflow:hidden}
+  .hbar .fill{height:100%;border-radius:6px;background:#3b82f6}
+  .hbar .val{font-variant-numeric:tabular-nums;color:var(--mut)}
+  .dbar{display:grid;grid-template-columns:150px 1fr 74px;align-items:center;gap:10px;margin:8px 0;font-size:12.5px}
+  .dbar .ctr{position:relative;height:20px;background:#f1f5f9;border-radius:6px}
+  .dbar .ctr::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:#cbd5e1}
+  .dbar .pos{position:absolute;left:50%;top:2px;bottom:2px;background:var(--grn);border-radius:0 6px 6px 0}
+  .dbar .neg{position:absolute;right:50%;top:2px;bottom:2px;background:var(--red);border-radius:6px 0 0 6px}
+  .dbar .val{font-variant-numeric:tabular-nums}
+  .vbars{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:6px}
+  .vbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px}
+  .vbar .b{width:100%;border-radius:4px 4px 0 0;min-height:2px}
+  .vbar .t{font-size:10px;color:var(--mut)}
+  .vbar .x{font-size:10px;color:var(--mut)}
+  .pill{display:inline-block;font-size:11px;border-radius:999px;padding:1px 8px;font-weight:600}
+  .pill.g{background:#e8f5ec;color:var(--grn)} .pill.r{background:#fdeceb;color:var(--red)}
+  .pill.n{background:#eef1f5;color:var(--mut)}
+  ul.tight{margin:6px 0 0;padding-left:18px} ul.tight li{margin:5px 0;line-height:1.45}
+  .dl{font-size:11.5px;color:var(--mut)}
+  code{background:#f1f5f9;border-radius:4px;padding:1px 5px;font-size:12px}
+  .legend{display:flex;gap:14px;font-size:11.5px;color:var(--mut);margin-top:6px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:14px;height:0;border-top:2px dashed #94a3b8;margin-right:5px;vertical-align:middle}
+  .legend b{display:inline-block;width:14px;height:10px;background:#3b82f6;border-radius:2px;margin-right:5px;vertical-align:middle}
+  /* ---------- insights ---------- */
+  .ins{display:flex;gap:9px;align-items:flex-start;margin:8px 0;font-size:13px;line-height:1.5}
+  .ins .dot{flex:0 0 9px;width:9px;height:9px;border-radius:50%;margin-top:5px}
+  .dot.pos{background:#1a7f37}.dot.neg{background:#c0392b}.dot.warn{background:#d97706}.dot.info{background:#3b82f6}
+  .ins .pg{margin-left:auto;flex:0 0 auto;font-size:10.5px;color:var(--mut);background:#f1f5f9;border-radius:999px;padding:2px 9px;white-space:nowrap;margin-top:3px}
+  details.pp{background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin-bottom:10px}
+  details.pp summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:4px 0}
+  details.pp[open] summary{margin-bottom:8px}
+  /* ---------- tooltip ---------- */
+  #trend{cursor:crosshair}
+  #tip{position:fixed;display:none;background:#111827;color:#f9fafb;font-size:11.5px;line-height:1.55;padding:7px 10px;border-radius:7px;pointer-events:none;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:280px}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="side">
+  <h1>🧴 Retention &amp; Category Intelligence</h1>
+  <div class="sub">Final interactive dashboard · 9 pages · real data</div>
+  <nav class="nav" id="nav">
+    <a href="#" data-t="p0" class="active">🏠 Executive Overview</a>
+    <a href="#" data-t="p1">🔀 1 · Migration</a>
+    <a href="#" data-t="p2">📊 2 · Sales &amp; Revenue</a>
+    <a href="#" data-t="p3">💬 3 · NPS &amp; CS</a>
+    <a href="#" data-t="p4">💰 4 · Price Changes</a>
+    <a href="#" data-t="p5">🔁 5 · Retention + V2V/V2C</a>
+    <a href="#" data-t="p6">📈 6 · New-to-Category</a>
+    <a href="#" data-t="p7">📖 7 · Definitions</a>
+    <a href="#" data-t="p8">💡 8 · Insights &amp; Conclusions</a>
+  </nav>
+  <div class="badge">
+    <b>Data:</b> real exports<br>
+    Sales: 25 Jul – 25 Jul 2026<br>
+    Journey: 01 Jan 2024 – 06 Jul 2026 · 152,091 customers<br>
+    AOP: 51 months (2024-01 → 2028-03) · generated 2026-08-27<br><br>
+    <b>Regenerate:</b> upload new CSVs in the app → <code>python make_static_dashboard.py</code> → commit. No hand-typed numbers in this file.
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main class="main">
+<section class="page active" id="p0">
+  <div class="topbar"><h2>🏠 Executive Overview</h2><span class="chip">real exports · 2026-08-27</span></div>
+  <div class="cap">One-glance state of the business — sales, voice, service, loyalty and plan-vs-actual. Every number is computed from the uploaded sources.</div>
+  <div class="cards"><div class="kpi"><div class="l">Revenue · Aug 2026 (MTD)</div><div class="v ">₹9.89Cr</div><div class="s">+290.5% vs Jul 2026 slice (partial months)</div></div><div class="kpi"><div class="l">Orders / Customers</div><div class="v ">393,081 / 340,283</div><div class="s">AOV ₹252</div></div><div class="kpi"><div class="l">Top category</div><div class="v ">Tikta</div><div class="s">24.6% of revenue (₹3.06Cr)</div></div><div class="kpi"><div class="l">Top channel</div><div class="v ">D2C</div><div class="s">31.7% of revenue</div></div><div class="kpi"><div class="l">Brand NPS</div><div class="v up">+61.5</div><div class="s">n=387 · promoters 69.8% · detractors 8.3% · product +56.8</div></div><div class="kpi"><div class="l">CS tickets</div><div class="v ">197</div><div class="s">100.0% resolved · top: Packaging Quality</div></div><div class="kpi"><div class="l">V2V / V2C</div><div class="v ">31.8% / 69.1%</div><div class="s">24,771 customers with a 2nd order</div></div><div class="kpi"><div class="l">AOP latest booked</div><div class="v ">₹73.0L</div><div class="s">spend ₹19.0L · ROAS 3.84 · 2026-08</div></div></div>
+  <div class="card">
+    <h3>Revenue trend — actual vs AOP <span class="note" style="display:inline">hover for values · click legend to read the split</span></h3>
+    <svg id="trend" width="100%" height="250" viewBox="0 0 900 250" preserveAspectRatio="none"></svg>
+    <div class="legend"><b></b> Actual sales (monthly) <i></i> AOP plan / booked (2024-01 → 2028-03) · red line = actual↔plan split (2026-08)</div>
+    <div class="note">Two different sources overlaid for reference only — never summed or mixed. AOP covers the Gel Moisturizers portfolio; actual sales cover all categories.</div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>🔄 What changed?</h3><ul class="tight"><li>AOP run-rate revenue 2028-03 vs 2028-02: +6.0% (₹2.80Cr → ₹2.97Cr).</li><li>Latest mature new-to-category cohorts: weighted 2nd-order rate 20.0% (avg 45 days).</li><li>Actual sales revenue in the latest month: ₹9.89Cr, +290.5% vs the previous month.</li><li>Voice: Brand NPS +61 / Product NPS +57 (387 responses).</li><li>Migration: 11.3% of acquired customers stayed in the same category; 5.0% switched.</li></ul></div>
+    <div class="card"><h3>🚨 What needs attention?</h3><ul class="tight"><li><b>1.</b> Face Malai/Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai has the weakest 180-day retention (0.0%) among mature cohorts.</li><li><b>2.</b> Aloe Vera Gel is the largest net migration loser (-923 more customers lost than gained).</li><li><b>3.</b> BC-CPS-NLHL3-125 shows a +181.4% realized-price move in 2026-08 (detected from sales data).</li><li><b>4.</b> New-to-category 2nd-order rate has declined vs previous cohorts (25.3% → 20.0%).</li><li><b>5.</b> CS: “Packaging Quality” is 31.5% of all tickets.</li></ul>
+      <div class="note">Each item is generated from the current data and only shown when its underlying numbers exist. Items flag observations to investigate — not confirmed causes.</div></div>
+  </div>
+</section>
+<section class="page" id="p1">
+  <div class="topbar"><h2>🔀 1 · Migration</h2><span class="chip">D2C · Moisturisers · 152,091 customers</span></div>
+  <div class="cap">Where customers move after their first purchase — inter-category / inter-variant / SKU level, plus the summary sheet. Level, entry, channel and cohort filters in the live app.</div>
+  <div class="cards">
+    <div class="kpi"><div class="l">Acquired customers</div><div class="v ">152,091</div><div class="s">193,756 orders · first 6 per customer</div></div>
+    <div class="kpi"><div class="l">V2V % (same variant)</div><div class="v ">31.8%</div><div class="s">qualifying 2nd orders: 24,771</div></div>
+    <div class="kpi"><div class="l">V2C % (same category)</div><div class="v ">69.1%</div><div class="s">same denominator as V2V</div></div>
+    <div class="kpi"><div class="l">Category repeat / switch</div><div class="v ">11.3% / 5.0%</div><div class="s">avg 123 d from 1st → 2nd order</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Net migration by category (gained − lost)</h3>
+      <div class="dbar"><div>Active Gel</div><div class="ctr"><div class="pos" style="width:81.3%"></div></div><div class="val up">+750</div></div><div class="dbar"><div>Face Malai</div><div class="ctr"><div class="pos" style="width:18.7%"></div></div><div class="val up">+173</div></div><div class="dbar"><div>Aloe Vera Gel</div><div class="ctr"><div class="neg" style="width:100.0%"></div></div><div class="val dn">−923</div></div>
+      <div class="note">Gained = customers whose 1st order was elsewhere but 2nd order is here; lost = the reverse. Only customers with an observed 2nd order are included. Primary line per order avoids many-to-many inflation.</div>
+    </div>
+    <div class="card">
+      <h3>V2V / V2C by category</h3>
+      <table class="tbl"><tr><th>Category</th><th class="num">Qualifying</th><th class="num">V2V %</th><th class="num">V2C %</th></tr><tr><td>Face Malai</td><td class="num">16,374</td><td class="num">29.6%</td><td class="num">80.1%</td></tr><tr><td>Aloe Vera Gel</td><td class="num">5,343</td><td class="num">43.5%</td><td class="num">51.5%</td></tr><tr><td>Active Gel</td><td class="num">3,054</td><td class="num">23.0%</td><td class="num">40.9%</td></tr><tr class="total"><td><b>Overall</b></td><td class="num"><b>24,771</b></td><td class="num"><b>31.8%</b></td><td class="num"><b>69.1%</b></td></tr></table>
+      <div class="note">V2C ≥ V2V by construction; separate formulas, never identical. Scope: D2C · Moisturisers × first 6 orders (stated in the UI).</div>
+    </div>
+  </div>
+  <div class="card">
+      <h3>🧴 Intra-category movement — category-scoped sales (2026-07-25 → 2026-08-23, split 2026-08-08)</h3>
+      <div class="note" style="margin-top:0;margin-bottom:10px">Aggregated export — <b>no customer ids</b>: SKU/grammage-level revenue-share movement, not customer migration. 32 SKUs in scope · 0 entered · 3 exited in 2nd half.</div>
+      <table class="tbl"><tr><th>Grammage</th><th class="num">Share 1st half</th><th class="num">Share 2nd half</th><th class="num">Δ</th><th></th></tr><tr><td>30g</td><td class="num">36.4%</td><td class="num">42.3%</td><td class="num"><span class="up">+5.87 pp</span></td><td><span class="pill g">gainer</span></td></tr><tr><td>250ml</td><td class="num">0.8%</td><td class="num">1.1%</td><td class="num"><span class="up">+0.24 pp</span></td><td><span class="pill g">gainer</span></td></tr><tr><td>20</td><td class="num">6.7%</td><td class="num">6.8%</td><td class="num"><span class="up">+0.15 pp</span></td><td><span class="pill g">gainer</span></td></tr><tr><td>75</td><td class="num">6.6%</td><td class="num">6.7%</td><td class="num"><span class="up">+0.11 pp</span></td><td><span class="pill g">gainer</span></td></tr><tr><td>5g</td><td class="num">0.0%</td><td class="num">0.0%</td><td class="num"><span class="up">+0.03 pp</span></td><td><span class="pill g">gainer</span></td></tr><tr><td>200ml</td><td class="num">0.0%</td><td class="num">0.0%</td><td class="num">—</td><td><span class="pill n">exited</span></td></tr><tr><td>9</td><td class="num">8.5%</td><td class="num">8.3%</td><td class="num"><span class="dn">−0.14 pp</span></td><td><span class="pill r">loser</span></td></tr><tr><td>50g</td><td class="num">40.9%</td><td class="num">34.7%</td><td class="num"><span class="dn">−6.25 pp</span></td><td><span class="pill r">loser</span></td></tr></table>
+      <div class="note">Top SKU gainer: &lt;bound method Series.prod of sku                                              FC-DM-PG-030
+product      Turmeric Nutmeg (Pigmentation)  Face Malai - 30g
+rev_1st                                             272047.03
+rev_2nd                                             261861.27
+share_1st                                            0.126222
+share_2nd                                            0.151475
+delta_pp                                             2.525295
+total_rev                                            533908.3
+status                                             Continuing
+Name: 0, dtype: object&gt; (12.6% → 15.1%, +2.5 pp). Real app tabs: SKU share shift · entered/exited · grammage rollup · top-10 SKU daily trend — all downloadable.</div>
+    </div>
+  <div class="card">
+    <h3>📄 Seasonality &amp; Migration summary sheet (July 2026)</h3>
+    <div class="note">Tabs in the live app: Seasonality · Order frequency · Grammage transitions. Displayed as-is; its grammage “entry” figures could not be exactly reproduced from the base sheet (undocumented entry-cohort definition) — both views agree on direction (Aloe Vera losing customers).</div>
+  </div>
+</section>
+<section class="page" id="p2">
+  <div class="topbar"><h2>📊 2 · Sales &amp; Revenue</h2><span class="chip">25 Jul – 25 Jul 2026 · 56 categories</span></div>
+  <div class="cap">KPIs, contribution, Pareto and cross-matrices from the sales export. The AOP section below is the <b>plan</b> sheet — never combined with actuals.</div>
+  <div class="cards">
+    <div class="kpi"><div class="l">Revenue · Aug 2026 MTD</div><div class="v ">₹9.89Cr</div><div class="s">23 days in data</div></div>
+    <div class="kpi"><div class="l">Orders</div><div class="v ">393,081</div><div class="s">340,283 customers</div></div>
+    <div class="kpi"><div class="l">AOV</div><div class="v ">₹252</div><div class="s">revenue ÷ orders</div></div>
+    <div class="kpi"><div class="l">Categories / SKUs</div><div class="v ">56 / 295</div><div class="s">19 channels</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Category contribution (top 10 of 56)</h3>
+      <div class="hbar"><div>Tikta</div><div class="track"><div class="fill" style="width:100.0%;background:#3b82f6"></div></div><div class="val">24.6%</div></div><div class="hbar"><div>Henna</div><div class="track"><div class="fill" style="width:57.2%;background:#3b82f6"></div></div><div class="val">14.1%</div></div><div class="hbar"><div>Navdha Shampoo</div><div class="track"><div class="fill" style="width:45.5%;background:#3b82f6"></div></div><div class="val">11.2%</div></div><div class="hbar"><div>Soap</div><div class="track"><div class="fill" style="width:42.7%;background:#3b82f6"></div></div><div class="val">10.5%</div></div><div class="hbar"><div>Summer Hair Oil</div><div class="track"><div class="fill" style="width:15.1%;background:#3b82f6"></div></div><div class="val">3.7%</div></div><div class="hbar"><div>Indigo Powder</div><div class="track"><div class="fill" style="width:12.3%;background:#3b82f6"></div></div><div class="val">3.0%</div></div><div class="hbar"><div>Nutri Conditioner</div><div class="track"><div class="fill" style="width:11.7%;background:#3b82f6"></div></div><div class="val">2.9%</div></div><div class="hbar"><div>Nutrimask</div><div class="track"><div class="fill" style="width:10.0%;background:#3b82f6"></div></div><div class="val">2.5%</div></div><div class="hbar"><div>Nourishing Jal</div><div class="track"><div class="fill" style="width:9.4%;background:#3b82f6"></div></div><div class="val">2.3%</div></div><div class="hbar"><div>Facial Oil</div><div class="track"><div class="fill" style="width:7.9%;background:#3b82f6"></div></div><div class="val">1.9%</div></div>
+      <div class="note">Pareto: 18 of 56 categories carry 80% of revenue (top-3 = 50.0% cumulative).</div>
+    </div>
+    <div class="card">
+      <h3>Channel contribution</h3>
+      <div class="hbar"><div>D2C</div><div class="track"><div class="fill" style="width:100.0%;background:#3b82f6"></div></div><div class="val">31.7%</div></div><div class="hbar"><div>Meesho</div><div class="track"><div class="fill" style="width:64.9%;background:#3b82f6"></div></div><div class="val">20.6%</div></div><div class="hbar"><div>Nykaa</div><div class="track"><div class="fill" style="width:42.5%;background:#3b82f6"></div></div><div class="val">13.5%</div></div><div class="hbar"><div>Flipkart</div><div class="track"><div class="fill" style="width:39.4%;background:#3b82f6"></div></div><div class="val">12.5%</div></div><div class="hbar"><div>Amazon</div><div class="track"><div class="fill" style="width:35.0%;background:#3b82f6"></div></div><div class="val">11.1%</div></div><div class="hbar"><div>Myntra</div><div class="track"><div class="fill" style="width:10.9%;background:#3b82f6"></div></div><div class="val">3.5%</div></div>
+      <div class="note">…plus 13 more channels. Live app also has Channel×Month and Category×Month heatmaps with downloads.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>AOP / Plan <span class="pill n" style="vertical-align:middle">plan ≠ actual — never combined</span></h3>
+    <div class="cards" style="margin-bottom:6px">
+      <div class="kpi"><div class="l">Latest booked revenue</div><div class="v ">₹73.0L</div><div class="s">2026-08</div></div>
+      <div class="kpi"><div class="l">Latest booked spend</div><div class="v ">₹19.0L</div><div class="s">2026-08</div></div>
+      <div class="kpi"><div class="l">Latest ROAS</div><div class="v ">3.84</div><div class="s">revenue ÷ spend</div></div>
+      <div class="kpi"><div class="l">AOP span</div><div class="v ">51 months</div><div class="s">2024-01 → 2028-03</div></div>
+    </div>
+    <div class="note">Tabs in the live app: Revenue vs Spend (bars with the actual↔plan split line) · ROAS line · Share by category · Growth &amp; FY. Wide multi-block grid parsed to long form; grand-total category rows excluded from unfiltered aggregates to avoid double counting.</div>
+  </div>
+</section>
+<section class="page" id="p3">
+  <div class="topbar"><h2>💬 3 · NPS &amp; Customer Success</h2><span class="chip">NPS EOM 2025 08 · CS feedback Aug ’26</span></div>
+  <div class="cap">Standard NPS = %promoters (9–10) − %detractors (0–6). CSV upload <i>or</i> paste-in text area in the live app. CS failure hierarchy + searchable Voice of Customer.</div>
+  <div class="cards">
+    <div class="kpi"><div class="l">Brand NPS</div><div class="v up">+61.5</div><div class="s">n=387 · promoters 69.8% · detractors 8.3%</div></div>
+    <div class="kpi"><div class="l">Product NPS</div><div class="v up">+56.8</div><div class="s">n=387 · promoters 68.2% · detractors 11.4%</div></div>
+    <div class="kpi"><div class="l">CS tickets</div><div class="v ">197</div><div class="s">100.0% resolved</div></div>
+    <div class="kpi"><div class="l">Median fulfilment</div><div class="v ">52 h</div><div class="s">33.9% over 72h · delivery−fulfilled</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Brand score distribution (0–10)</h3>
+      <div class="vbars" id="distB"></div>
+      <div class="legend"><b></b> promoters (9–10) 270 · passives (7–8) 85 · detractors (0–6) 117</div>
+    </div>
+    <div class="card">
+      <h3>Product score distribution (0–10)</h3>
+      <div class="vbars" id="distP"></div>
+      <div class="legend"><b></b> promoters 264 · passives 79 · detractors 123</div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Brand customers migrated from</h3>
+      <table class="tbl"><tr><th>Source</th><th class="num">Customers</th><th></th></tr><tr><td>Nat Habit is my first!</td><td class="num">126</td><td><span class="pill g">first-time</span></td></tr><tr><td>Mamaearth</td><td class="num">22</td><td><span class="pill n">switcher</span></td></tr><tr><td>Godrej Nupur</td><td class="num">14</td><td><span class="pill n">switcher</span></td></tr><tr><td>Loreal</td><td class="num">13</td><td><span class="pill n">switcher</span></td></tr><tr><td>Biotique</td><td class="num">11</td><td><span class="pill n">switcher</span></td></tr></table>
+      <div class="note">First-time respondents are separated, never mixed into competitor pull. Like/dislike themes split on | ; , / &amp; — “no complaint” remarks excluded from dislikes.</div>
+    </div>
+    <div class="card">
+      <h3>CS — top failure reason: <b>Packaging Quality</b> (31.5% of tickets)</h3>
+      <div class="note">Hierarchy (type → reason → subreason) rendered as a sunburst in the live app, with responsible-team view (this export has no team data — stated, not invented), city/state tables, and a full-text searchable remarks panel. All downloadable.</div>
+    </div>
+  </div>
+  <div class="card">
+      <h3>🗣️ Voice of Customer — searchable (80 remarks)</h3>
+      <input id="vocSearch" class="search" type="text" placeholder="Search remarks — e.g. “packaging”, “texture”, “delivery”…" oninput="vocFilter()">
+      <div class="note" id="vocCount">Showing 80 of 80 remarks</div>
+      <div class="vocscroll"><table class="tbl" id="vocTable"><tr><th>Type</th><th>Category</th><th>Remark</th></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Good moisturiser for skin|Purity of ingredients- natural and unadulterated|Effectively targets my concerns|Provides good hydration to skin|Good texture &amp; lightw</td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Good moisturiser for skin|Good texture &amp; lightweight on skin|Provides good hydration to skin|Effectively targets my concerns|Purity of ingredients- natural and </td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Purity of ingredients- natural and unadulterated</td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Provides good hydration to skin</td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Effectively targets my concerns|Provides good hydration to skin|Good texture &amp; lightweight on skin|Good moisturiser for skin|Purity of ingredients- natural and </td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Provides good hydration to skin</td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>Product is expensive</td></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Good texture &amp; lightweight on skin|Good moisturiser for skin|Purity of ingredients- natural and unadulterated</td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Purity of ingredients- natural and unadulterated|Good moisturiser for skin</td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Active Gel</td><td>Purity of ingredients- natural and unadulterated</td></tr><tr><td><span class="pill r">dislike</span></td><td>Active Gel</td><td>A mild smell</td></tr><tr><td><span class="pill g">like</span></td><td>Baby Maahu</td><td>Good value for money|High purity- made of only natural good quality ingredients|Good for baby massage</td></tr><tr><td><span class="pill r">dislike</span></td><td>Baby Maahu</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Baby Powder</td><td>Good value for money|Product is talc-free, asbestos-free &amp; menthol free|Made of pure &amp; natural good quality ingredients|Effective for baby&#x27;s rashes</td></tr><tr><td><span class="pill r">dislike</span></td><td>Baby Powder</td><td>Does not spread &amp; flow well</td></tr><tr><td><span class="pill g">like</span></td><td>Baby Scalp Oil</td><td>Is effective and gives good results|High purity- free of liquid paraffin and mineral oils</td></tr><tr><td><span class="pill r">dislike</span></td><td>Baby Scalp Oil</td><td>Product is too expensive</td></tr><tr><td><span class="pill g">like</span></td><td>Baby Scalp Oil</td><td>Ayurvedic preparation|Suits baby&#x27;s skin &amp; safe to apply|High purity- free of liquid paraffin and mineral oils</td></tr><tr><td><span class="pill r">dislike</span></td><td>Baby Scalp Oil</td><td>Little expensive</td></tr><tr><td><span class="pill g">like</span></td><td>Baby Scalp Oil</td><td>Ayurvedic preparation</td></tr><tr><td><span class="pill r">dislike</span></td><td>Baby Scalp Oil</td><td>Product is too expensive</td></tr><tr><td><span class="pill g">like</span></td><td>Baby Scalp Oil</td><td>Suits baby&#x27;s skin &amp; safe to apply</td></tr><tr><td><span class="pill r">dislike</span></td><td>Baby Scalp Oil</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Baby Scalp Oil</td><td>Ayurvedic preparation|High purity- free of liquid paraffin and mineral oils</td></tr><tr><td><span class="pill r">dislike</span></td><td>Baby Scalp Oil</td><td>Product is too expensive|No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Bath</td><td>Skin feels refreshed post wash</td></tr><tr><td><span class="pill r">dislike</span></td><td>Bath</td><td>Do not like pouch packaging</td></tr><tr><td><span class="pill g">like</span></td><td>Bath</td><td>Skin feels refreshed post wash</td></tr><tr><td><span class="pill r">dislike</span></td><td>Bath</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Bath</td><td>Made of all-natural good quality ingredients|Skin feels refreshed post wash</td></tr><tr><td><span class="pill r">dislike</span></td><td>Bath</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Good value for money</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>Very good product</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Good for untangling hair knots|Good value for money</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Leaves hair frizz free|Good for untangling hair knots|Made of oil treated pure neem wood|Good value for money</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Good for untangling hair knots|Leaves hair frizz free|Made of oil treated pure neem wood|Good value for money</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Leaves hair frizz free</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>Product is too expensive</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Good for untangling hair knots|Leaves hair frizz free|Made of oil treated pure neem wood</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>Product is too expensive</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Leaves hair frizz free|Made of oil treated pure neem wood|Good value for money</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Good for untangling hair knots|Made of oil treated pure neem wood</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>Product is too expensive</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Good for untangling hair knots|Leaves hair frizz free|Good value for money</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Good for untangling hair knots</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>No complaints- love the product!</td></tr><tr><td><span class="pill g">like</span></td><td>Comb</td><td>Good for untangling hair knots</td></tr><tr><td><span class="pill r">dislike</span></td><td>Comb</td><td>Bristles are sharp and hurt my scalp</td></tr><tr><td><span class="pill n">CS</span></td><td>Unspecified</td><td>Hi, I need help Ma&#x27;am, I have been using Nat Habits products for quite some time. This is the second time I am ordering from your official website. But I am sho</td></tr><tr><td><span class="pill n">CS</span></td><td>Brand Starter</td><td>My 2 bottles are only half fillled</td></tr><tr><td><span class="pill n">CS</span></td><td>Henna</td><td>I have received only one pack of Nat habit Fresh henna order no.</td></tr><tr><td><span class="pill n">CS</span></td><td>Shampoo</td><td>Only when I opened the plastic cover I realised package was damaged and leaking I see that the package has got damaged by rain water but the product inside is n</td></tr><tr><td><span class="pill n">CS</span></td><td>Baby Powder</td><td>Only powder box damaged Others all are ok Only Shwet chandan baby powder I have opened package and arraanged in cupboard The packed order was leaked Powder spre</td></tr><tr><td><span class="pill n">CS</span></td><td>Unspecified</td><td>Hi, I need help with my order NH-3803498. The methi hair gel spray bottle is broken. All the other products received are fine.. dont have unboxing video.. parce</td></tr><tr><td><span class="pill n">CS</span></td><td>Unspecified</td><td>Kindly arrange to send the correct product and please advise what to do with the wrong one. Thanks!</td></tr><tr><td><span class="pill n">CS</span></td><td>Face Malai</td><td>I received a different product and got a letter send by nathabit</td></tr><tr><td><span class="pill n">CS</span></td><td>Nutrimask</td><td>Missing product in my order One anti dandruff nutrimask is missing Fully packed before i open the box</td></tr><tr><td><span class="pill n">CS</span></td><td>Soap</td><td>Order ID: NH-3803602 Case Reason: Missing Lavender Soap 125g 2 VOC: 2 soap are missing from my package i need assistance on this issue where should i contact yo</td></tr><tr><td><span class="pill n">CS</span></td><td>Almond Oil</td><td>This was delivered in the august order with may manufacturing Also the dropper is disgusting to use as its fully sticky I cannot use the oil without this packag</td></tr><tr><td><span class="pill n">CS</span></td><td>Soap</td><td>I used the shampoo and the soap. They were both amazing products. But one thing I want to tell you is that the soap broke while I was using it. I think the desi</td></tr><tr><td><span class="pill n">CS</span></td><td>Henna</td><td>My courier is not delivered but it shows delivered He received OTP said not working and left Didn&#x27;t handover the parcel Yes later he called and said there is si</td></tr><tr><td><span class="pill n">CS</span></td><td>Unspecified</td><td>I have ordered 5*4 =20 soaps But recieved only 19 1 soap is missing. Please check and send me 1 soap</td></tr><tr><td><span class="pill n">CS</span></td><td>Comb</td><td>Hi, I need help with my order NH-3815778 My comb is damaged</td></tr><tr><td><span class="pill n">CS</span></td><td>Mukhalaya</td><td>Customer reported experiencing persistent pimples, acne breakouts, and dark marks after using Mukhalaya face oils (Saffron Tuberose and Lotus Marula). The custo</td></tr><tr><td><span class="pill n">CS</span></td><td>Brand Starter</td><td>I had ordered 48hr malai moisturizer But I din. Get that in my order Can u please solve my issue Other al things what I had ordered I have received but dinn rec</td></tr><tr><td><span class="pill n">CS</span></td><td>Unspecified</td><td>I m unable to open the lip mura container...I tried multiple times. The cap is too tight...I m unable to open it. May be while packing mura was hot and air is t</td></tr><tr><td><span class="pill n">CS</span></td><td>Henna</td><td>Yes, I am happy with your products n ordered some more, keep them in budget friendly for middle class can give repetitive orders. Thank yoy</td></tr><tr><td><span class="pill n">CS</span></td><td>Shampoo</td><td>VOC: Customer reported that the shampoo was delivered today in damaged condition, with the bottle cap and seal broken, resulting in leakage and spillage inside </td></tr></table></div>
+      <div class="note">Sample of product-level likes/dislikes plus CS global remarks (full text in the live app's searchable VoC panel, all downloadable).</div>
+    </div>
+</section>
+<section class="page" id="p4">
+  <div class="topbar"><h2>💰 4 · Price Changes</h2><span class="chip">explicit + detected</span></div>
+  <div class="cap">Two independent sources, clearly labelled. Source A is explicit (revision notes); Source B is a <b>detected signal from realized prices</b> — not list/MRP.</div>
+  <div class="grid2"><div class="card">
+        <h3>Source A — explicit revisions (Retention FM notes)</h3>
+        <table class="tbl"><tr><th>SKU</th><th>Change</th><th>Date</th></tr><tr><td>FC-CWDM-FW-030</td><td><span class="pill n">Decreased Price</span></td><td>2026-02-02</td></tr><tr><td>FC-HHDM-GAT-030</td><td><span class="pill n">Same Price</span></td><td>2026-02-02</td></tr><tr><td>FC-HHDM-TV-030</td><td><span class="pill n">Decreased Price</span></td><td>2026-02-02</td></tr><tr><td>FC-HHDM-FC-030</td><td><span class="pill n">Decreased Price</span></td><td>2026-02-02</td></tr><tr><td>FC-DM-NR-030</td><td><span class="pill n">Same Price</span></td><td>2026-02-02</td></tr><tr><td>FC-HDDM-PT-030</td><td><span class="pill n">Same Price</span></td><td>2026-02-02</td></tr><tr><td>FC-HDDM-FB-030</td><td><span class="pill n">Decreased Price</span></td><td>2026-02-02</td></tr><tr><td>FC-DM-PG-030</td><td><span class="pill n">Same Price</span></td><td>2026-02-02</td></tr></table>
+        <div class="note">Parsed from “Decreased/Increased/Same – Price Revision – &lt;date&gt;” and “New … Variant Launch” notes.</div>
+      </div><div class="card">
+        <h3>Source B — detected from realized prices</h3>
+        <table class="tbl"><tr><th>SKU</th><th>Month</th><th>Realized unit price</th><th class="num">MoM Δ</th></tr><tr><td>BC-CPS-NLHL3-125</td><td>2026-08</td><td>₹111.59 → ₹313.98</td><td class="num"><span class="pill g">+181.4%</span></td></tr><tr><td>HR-NJ-RJ-200</td><td>2026-08</td><td>₹133.30 → ₹249.70</td><td class="num"><span class="pill g">+87.3%</span></td></tr><tr><td>FC-KL-TK-040</td><td>2026-08</td><td>₹180.63 → ₹74.23</td><td class="num"><span class="pill r">-58.9%</span></td></tr><tr><td>RL-FC-FW-MDPA-050</td><td>2026-08</td><td>₹49.50 → ₹33.61</td><td class="num"><span class="pill r">-32.1%</span></td></tr><tr><td>AC-SDL-LO-00</td><td>2026-08</td><td>₹96.50 → ₹65.84</td><td class="num"><span class="pill r">-31.8%</span></td></tr><tr><td>HR-NJ-MJ-100</td><td>2026-08</td><td>₹145.98 → ₹103.03</td><td class="num"><span class="pill r">-29.4%</span></td></tr></table>
+        <ul class="tight">
+          <li>48 SKU-month increase(s) and 49 decrease(s) beyond the ±5.0% threshold (slider in the live app).</li>
+          <li>Realized unit price = revenue ÷ quantity per SKU-month — realized price moves, which may include discount/promo effects, not only list-price changes.</li>
+          <li>Price-trend lines with revision-event markers from Source A overlaid in the live app.</li>
+          <li>No price × retention overlap detected for the mature Retention FM cohort.</li>
+        </ul>
+      </div></div>
+</section>
+<section class="page" id="p5">
+  <div class="topbar"><h2>🔁 5 · Retention + V2V/V2C</h2><span class="chip">FM sheet + journey base sheet</span></div>
+  <div class="cap">Window columns (15–360 days) shown as percentages. Windows not yet observable are <b>N/A — never 0%</b> (cohort maturity rule).</div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Retention FM — average by window (19 SKUs, mature cohorts only)</h3>
+      <table class="tbl"><tr><th>Window</th><th class="num">Avg retention</th><th>Mature SKUs</th></tr><tr><td>15 days</td><td class="num">0.29%</td><td>19 / 19</td></tr><tr><td>30 days</td><td class="num">1.07%</td><td>19 / 19</td></tr><tr><td>60 days</td><td class="num">2.96%</td><td>19 / 19</td></tr><tr><td>90 days</td><td class="num">4.16%</td><td>19 / 19</td></tr><tr><td>120 days</td><td class="num">5.12%</td><td>19 / 19</td></tr><tr><td>180 days</td><td class="num">5.93%</td><td>19 / 19</td></tr><tr><td>240 / 300 / 360 days</td><td class="num"><span class="pill n">N/A</span></td><td>0 mature — not yet observable</td></tr></table>
+      <div class="note">Sheet stores percentages (e.g. 10.8 = 10.8%) → converted to fractions internally, displayed as 30.4% style. Denominator = cohort “Customer” size per row.</div>
+    </div>
+    <div class="card">
+      <h3>V2V / V2C (journey base sheet)</h3>
+      <div class="cards" style="grid-template-columns:1fr 1fr">
+        <div class="kpi"><div class="l">V2V %</div><div class="v ">31.8%</div><div class="s">same variant on 2nd order</div></div>
+        <div class="kpi"><div class="l">V2C %</div><div class="v ">69.1%</div><div class="s">same category, any variant</div></div>
+      </div>
+      <div class="note">Denominator = customers with a qualifying 2nd order (24,771). Cohort tables and per-variant breakdowns in the live app.</div>
+      <div class='note'>Same-category retention computed from the journey base sheet (customer-weighted, mature cohorts): 30d 4.0% · 60d 7.2% · 90d 9.5% — with the same maturity → N/A rule.</div>
+    </div>
+  </div>
+</section>
+<section class="page" id="p6">
+  <div class="topbar"><h2>📈 6 · New-to-Category</h2><span class="chip">as of 2026-08-03</span></div>
+  <div class="cap">Order-movement curve for new customers: 2nd–6th order rates and days to Nth order, with cohort maturity flags.</div>
+  <div class="cards">
+    <div class="kpi"><div class="l">Cohorts</div><div class="v ">88</div><div class="s">85 mature at 90 days</div></div>
+    <div class="kpi"><div class="l">New customers (base)</div><div class="v ">15.5L</div><div class="s">sum of first-order cohorts</div></div>
+    <div class="kpi"><div class="l">Avg 2nd-order rate</div><div class="v ">35.8%</div><div class="s">mature cohorts · avg 176 days</div></div>
+    <div class="kpi"><div class="l">Avg 3rd-order rate</div><div class="v ">19.7%</div><div class="s">mature cohorts · avg 138 days</div></div>
+  </div>
+  <div class="card">
+    <h3>Order-movement curve (mature cohorts)</h3>
+    <div class="hbar"><div>2nd order</div><div class="track"><div class="fill" style="width:100.0%;background:#0b6e4f"></div></div><div class="val">35.8%</div></div>
+    <div class="hbar"><div>3rd order</div><div class="track"><div class="fill" style="width:55.2%;background:#34a06e"></div></div><div class="val">19.7%</div></div>
+    <div class="note">Live app: per-cohort 2nd–6th order curves, days-to-Nth-order heatmap, and not-mature cohorts greyed out (never treated as 0%). Percentages recomputed from counts when the sheet’s pct columns are inconsistent.</div>
+  </div>
+</section>
+<section class="page" id="p7">
+  <div class="topbar"><h2>📖 7 · Definitions &amp; Methodology</h2></div>
+  <div class="cap">The authoritative page for every metric in the dashboard (rendered in full in the live app).</div>
+  <div class="card">
+    <h3>Key formulas</h3>
+    <ul class="tight">
+      <li><b>NPS</b> = %promoters (9–10) − %detractors (0–6), per question (brand &amp; product), standard method.</li>
+      <li><b>V2V %</b> = customers whose 2nd order is the <b>same variant</b> as their 1st ÷ customers with a qualifying 2nd order.</li>
+      <li><b>V2C %</b> = customers whose 2nd order stays in the <b>same category</b> (any variant) ÷ the <b>same denominator</b>. V2C ≥ V2V by construction.</li>
+      <li><b>Retention (FM)</b> = window column ÷ 100; window &gt; (as_of − onb_date) → <b>N/A</b>, never 0%.</li>
+      <li><b>Price — Source A</b>: parsed from revision notes. <b>Source B</b>: realized unit price = revenue ÷ quantity per SKU-month; MoM change beyond ±threshold (default 5%) → detected signal.</li>
+      <li><b>Migration</b>: primary line per order (largest quantity; first line on ties) — no many-to-many inflation. Net = gained − lost.</li>
+      <li><b>AOP</b>: wide multi-block grid → long form; channel TOTAL rows; grand-total category rows excluded from unfiltered aggregates; plan never mixed with actuals.</li>
+      <li><b>CS fulfilment time</b> = delivery_time − fulfilled_time (hours); median and % &gt; 72h reported.</li>
+      <li><b>Currency</b>: ₹ with L (10⁵) / Cr (10⁷) abbreviations. Percentages stored as fractions, displayed as 30.4%.</li>
+      <li><b>Causality</b>: overlaps are always “a potential relationship requiring further validation”.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>What the dashboard cannot compute from these sources (stated, never fabricated)</h3>
+    <ul class="tight">
+      <li>Customer-level metrics beyond the journey scope (D2C × Moisturisers × first 6 orders).</li>
+      <li>True MRP / list-price history — realized prices &amp; revision notes only.</li>
+      <li>Responsible-team workload — the column is empty in this export.</li>
+      <li>Customer LTV — no revenue per order in the journey export.</li>
+      <li>Same-day / real-time metrics — sources are EOM/period exports.</li>
+    </ul>
+  </div>
+</section>
+<section class="page" id="p8">
+  <div class="topbar"><h2>💡 8 · Insights &amp; Conclusions</h2><span class="chip">generated from current data · 2026-08-27</span></div>
+  <div class="cap">One page tying everything together: cross-page synthesis, connections between independent sources, and what the data says it needs attention. Every sentence below is generated from the currently loaded sources — nothing is handwritten.</div>
+  <div class="card">
+    <h3>🎯 Top conclusions</h3>
+    <ul class="tight"><li><b>1.</b> Face Malai/Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai has the weakest 180-day retention (0.0%) among mature cohorts.</li><li><b>2.</b> Aloe Vera Gel is the largest net migration loser (-923 more customers lost than gained).</li><li><b>3.</b> BC-CPS-NLHL3-125 shows a +181.4% realized-price move in 2026-08 (detected from sales data).</li><li><b>4.</b> 🟢 Latest-month revenue is ₹9.89Cr, +290.5% vs the previous month (₹2.53Cr). Months can be partial (MTD), so the percentage compares different day counts — read it as momentum, not a like-for-like growth rate.</li><li><b>5.</b> 🟢 Of 24,771 customers with a second order, 31.8% repeat with the same variant (V2V) while 69.1% stay in the same category (V2C). The 37.3pp gap means most repeat behaviour is CATEGORY loyalty — customers return to the category even when they change variant, so the portfolio (not a single SKU) is what keeps them.</li></ul>
+    <div class="note">Attention items are prioritized (1 = most data-supported); 🟢 items are the strongest positive signals. See the per-page sections below for the full reasoning.</div>
+  </div>
+  <div class='card'><h3>📈 Growth &amp; momentum</h3><div class='ins'><span class='dot pos'></span><span class='txt'>Latest-month revenue is ₹9.89Cr, +290.5% vs the previous month (₹2.53Cr). Months can be partial (MTD), so the percentage compares different day counts — read it as momentum, not a like-for-like growth rate.</span><span class='pg'>Sales</span></div><div class='ins'><span class='dot info'></span><span class='txt'>Tikta is the largest category at 24.6% of revenue (₹3.06Cr) out of 56 categories — the rest of the mix matters less than keeping this one healthy.</span><span class='pg'>Sales</span></div><div class='ins'><span class='dot info'></span><span class='txt'>D2C is the largest channel at 31.7% of revenue (₹3.94Cr).</span><span class='pg'>Sales</span></div></div><div class='card'><h3>🔁 Loyalty &amp; repeat behaviour</h3><div class='ins'><span class='dot pos'></span><span class='txt'>Of 24,771 customers with a second order, 31.8% repeat with the same variant (V2V) while 69.1% stay in the same category (V2C). The 37.3pp gap means most repeat behaviour is CATEGORY loyalty — customers return to the category even when they change variant, so the portfolio (not a single SKU) is what keeps them.</span><span class='pg'>Retention</span></div><div class='ins'><span class='dot warn'></span><span class='txt'>Only 11.3% of 152,091 acquired customers repeat in the same category (5.0% switch); 16.3% place any second order within the observed window, averaging 123 d from first to second order. The 1st→2nd-order step is the biggest loyalty bottleneck in the data.</span><span class='pg'>Migration</span></div><div class='ins'><span class='dot pos'></span><span class='txt'>New-to-category customers place a 2nd order at 35.8% (avg 176 days) and a 3rd at 19.7% — the 2nd→3rd drop is where the movement curve flattens, i.e. where repeat-acquisition effort pays off.</span><span class='pg'>New-to-Category</span></div></div><div class='card'><h3>🧭 Where customers move</h3><div class='ins'><span class='dot pos'></span><span class='txt'>Net migration gainer: Active Gel (+750 more customers gained than lost).</span><span class='pg'>Migration</span></div><div class='ins'><span class='dot neg'></span><span class='txt'>Net migration loser: Aloe Vera Gel (-923 more customers lost than gained).</span><span class='pg'>Migration</span></div><div class='ins'><span class='dot pos'></span><span class='txt'>Strongest stay-rate: Face Malai — 13.9% of its acquired customers repeated in the same category.</span><span class='pg'>Migration</span></div><div class='ins'><span class='dot info'></span><span class='txt'>Largest observed switch flow: Aloe Vera Gel → Face Malai.</span><span class='pg'>Migration</span></div></div><div class='card'><h3>💬 Voice of the customer</h3><div class='ins'><span class='dot pos'></span><span class='txt'>Brand NPS is +61.5 (healthy, 387 responses) vs Product NPS +56.8 — the product experience is the weaker link vs the brand.</span><span class='pg'>NPS &amp; CS</span></div><div class='ins'><span class='dot pos'></span><span class='txt'>Most-liked product theme: “Good value for money” (63 mentions).</span><span class='pg'>NPS &amp; CS</span></div><div class='ins'><span class='dot neg'></span><span class='txt'>Most-frequent dislike theme: “Product is expensive” (19 mentions) — a complaint theme, not a confirmed root cause.</span><span class='pg'>NPS &amp; CS</span></div></div><div class='card'><h3>🛠️ Service &amp; fulfilment</h3><div class='ins'><span class='dot warn'></span><span class='txt'>Top CS failure type is Post Delivery - Service Failure — 86.3% of 197 tickets; dominant reason within it: Packaging Quality.</span><span class='pg'>NPS &amp; CS</span></div><div class='ins'><span class='dot info'></span><span class='txt'>Median fulfilment-to-delivery time is 52 hours (2.2 days); 33.9% of ticketed orders exceed 72 hours.</span><span class='pg'>NPS &amp; CS</span></div></div><div class='card'><h3>💰 Pricing</h3><div class='ins'><span class='dot info'></span><span class='txt'>Explicit price-revision log (from Retention FM notes): 1 increase(s), 10 decrease(s), 7 same-price, 1 new variant(s) — all in one date cluster, consistent with a planned revision cycle.</span><span class='pg'>Price</span></div><div class='ins'><span class='dot warn'></span><span class='txt'>Detected from realized prices (revenue ÷ quantity, ±5.0% MoM): 48 SKU-month increase(s) and 49 decrease(s); largest move is BC-CPS-NLHL3-125 in 2026-08 at +181.4%. Realized price also moves with discounts and promos — treat as a signal, not a list-price confirmation.</span><span class='pg'>Price</span></div></div><div class='card'><h3>⏳ Retention deep-dive</h3><div class='ins'><span class='dot info'></span><span class='txt'>Most mature window available as of 2026-08-27: 180 days — strongest is Face Malai/Pomegranate Tulsi (Hot Dry) 13 - 19 Yrs Face Malai (11.3%) and weakest is Face Malai/Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai (0.0%) across 19 SKUs.</span><span class='pg'>Retention</span></div><div class='ins'><span class='dot warn'></span><span class='txt'>Longer windows (240, 300, 360 days) are not yet observable for any cohort as of 2026-08-27 — they are shown as N/A, never 0%.</span><span class='pg'>Retention</span></div></div><div class='card'><h3>📐 Plan (AOP)</h3><div class='ins'><span class='dot info'></span><span class='txt'>Latest booked month (up to 2026-08): 2026-08 — revenue ₹73.0L, spend ₹19.0L, ROAS 3.84. Later months in the AOP sheet are plan, not booked.</span><span class='pg'>AOP</span></div><div class='ins'><span class='dot info'></span><span class='txt'>The AOP plan spans 2024-01 → 2028-03 (51 months); it is always shown separately from actual sales and never combined with them.</span><span class='pg'>AOP</span></div></div><div class='card'><h3>🔗 Cross-page connections</h3><div class='ins'><span class='dot warn'></span><span class='txt'>“Packaging Quality” leads CS tickets (31.5% of them) while packaging also appears in NPS responses (22 mentions) — the same weakness shows up in two independent sources. A potential relationship requiring further validation, not a confirmed cause.</span><span class='pg'>NPS &amp; CS</span></div><div class='ins'><span class='dot warn'></span><span class='txt'>Aloe Vera Gel is the largest net migration loser (-923) and its category loyalty (V2C 51.5%) sits below the overall 69.1% — weaker loyalty is observed alongside the net outflow (potential relationship, requires validation).</span><span class='pg'>Migration × Retention</span></div><div class='ins'><span class='dot pos'></span><span class='txt'>D2C is the largest sales channel (31.7% of revenue) and the loyalty base sheet is D2C-scoped — migration, V2V/V2C and retention describe the same customer pool as the business&#x27;s biggest channel, so the two pages talk about the same customers.</span><span class='pg'>Sales × Migration</span></div></div>
+  <div class="card">
+    <h3>📄 Per-page conclusions (detail)</h3>
+    <details class='pp'><summary>📊 Sales &amp; Revenue</summary><ul class="tight"><li>Revenue for the selected period is ₹9.89Cr, up 290.5% vs the previous comparable period (₹2.53Cr).</li><li>Top contributing category: Tikta at 24.6% of revenue (₹3.06Cr).</li><li>Largest channel: D2C at 31.7% of revenue.</li><li>Top variant by revenue: Ubtan Tikta Face Wash (Tikta) at 18.6% — cumulative share of the top 5 variants is 47.0%.</li></ul></details><details class='pp'><summary>🔀 Migration</summary><ul class="tight"><li>Of 152,091 acquired customers, 24,771 placed a second order (16.3%); 11.3% repeated in the same category while 5.0% switched to a different one.</li><li>Average time from first to second order is 123 d.</li><li>Strongest stay-rate: Face Malai (13.9% of acquired customers repeated in the same category).</li><li>Largest outflow: Active Gel — 10.2% of its customers moved to another category; top destination: Face Malai.</li><li>Net migration gainer: Active Gel (+750); net loser: Aloe Vera Gel (-923).</li><li>Largest observed flow: Aloe Vera Gel → Face Malai.</li></ul></details><details class='pp'><summary>💬 NPS &amp; Customer Success</summary><ul class="tight"><li>Brand NPS is +61 (healthy) on 387 responses; Product NPS is +57 on 387.</li><li>Biggest positive driver (product level): “Good value for money” with 63 mentions.</li><li>Biggest negative driver (product level): “Product is expensive” with 19 mentions — a complaint theme, not a confirmed root cause.</li><li>Strongest category NPS: Active Gel (+100); weakest: Nutri Conditioner (+27).</li><li>32.6% of respondents are first-time Nat Habit customers.</li><li>Top competitive acquisition source: Mamaearth (22 customers, 5.7%).</li></ul></details><details class='pp'><summary>💰 Price Changes</summary><ul class="tight"><li>Explicit price increases logged for 1 SKU(s): FC-DM-AA-030 (Clove Tea-Tree (Anti-Acne) Face Malai).</li><li>Explicit price decreases logged for 10 SKU(s).</li><li>Detected from sales data (realized price = revenue ÷ quantity): 48 SKU-month(s) above +5.0% and 49 below −5.0% — realized price moves, which may include discount/promo effects, not only list-price changes.</li><li>Largest detected move: BC-CPS-NLHL3-125 in 2026-08 at +181.4% (₹111.59 → ₹313.98).</li></ul></details><details class='pp'><summary>🔁 Retention + V2V/V2C</summary><ul class="tight"><li>At the 180-day window (most mature available as of 2026-08-27), Pomegranate Tulsi (Hot Dry) 13 - 19 Yrs Face Malai shows the strongest retention (11.3%) and Winter Blackseed Tulsi (Cold) 13 - 19 Yrs Face Malai the weakest (0.0%).</li><li>Across 24,771 customers with a second order, V2V (same variant) is 31.8% and V2C (same category) is 69.1% — a 37.3pp gap: category loyalty holds even when customers change variant.</li></ul></details><details class='pp'><summary>📈 New-to-Category</summary><ul class="tight"><li>New-to-category 2nd-order rate over the last 3 mature cohorts is 20.0%, down 20.8% vs the preceding 3 cohorts (25.3%) — a declining repeat behaviour worth investigating.</li><li>Strongest repeat cohort (mature): 2019-03 at 100.0%; weakest: 2026-05 at 16.3%.</li><li>3 most recent cohort(s) are younger than 90 days and are flagged “immature” — their low repeat rates reflect short observation time, not weaker behaviour.</li></ul></details><details class='pp'><summary>🛠️ Customer Success</summary><ul class="tight"><li>Largest CS issue: Post Delivery - Service Failure, accounting for 86.3% of 197 tickets.</li><li>Within this issue, the dominant reason is Packaging Quality (62 tickets).</li><li>Most affected category: Shampoo (18 tickets).</li><li>Median fulfilment-to-delivery time is 52 hours (2.2 days), with 33.9% of ticketed orders taking more than 72 hours.</li></ul></details>
+  </div>
+  <div class="card">
+    <h3>📖 How to read this page</h3>
+    <ul class="tight">
+      <li>Every statement is <b>generated from the currently loaded data</b> — upload new CSVs and the conclusions change with them.</li>
+      <li>Overlaps between sources are phrased as <i>“a potential relationship requiring further validation”</i> — never cause-and-effect.</li>
+      <li>Immature cohort windows are <b>N/A, never 0%</b>; partial months are labelled MTD and never compared as like-for-like.</li>
+      <li>If a source is missing, its section disappears instead of guessing. Tones: 🟢 positive · 🔴 negative ·  watch ·  fact/context.</li>
+    </ul>
+  </div>
+</section>
+</main>
+</div>
+<div id="tip"></div>
+
+<script>
+const DATA = {"months": ["2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12", "2027-01", "2027-02", "2027-03", "2027-04", "2027-05", "2027-06", "2027-07", "2027-08", "2027-09", "2027-10", "2027-11", "2027-12", "2028-01", "2028-02", "2028-03"], "aop": [0.569, 0.548, 0.659, 0.617, 0.635, 0.541, 0.685, 0.591, 0.555, 0.581, 0.753, 0.742, 0.674, 0.679, 0.8, 0.86, 0.735, 0.656, 0.656, 0.596, 0.589, 0.658, 0.973, 0.809, 0.647, 0.612, 0.599, 0.615, 0.398, 0.432, 0.689, 0.73, 0.774, 0.867, 0.997, 1.077, 1.165, 1.247, 1.352, 1.432, 1.506, 1.597, 1.692, 1.785, 1.875, 2.062, 2.31, 2.471, 2.644, 2.803, 2.971], "actual": {"2026-07": 2.533, "2026-08": 9.893}, "ymax": 11, "distB": [0, 12, 4, 4, 2, 7, 3, 22, 63, 81, 189], "distP": [0, 8, 3, 6, 1, 12, 14, 24, 55, 91, 173]};
+
+const DATA = {"months": ["2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12", "2027-01", "2027-02", "2027-03", "2027-04", "2027-05", "2027-06", "2027-07", "2027-08", "2027-09", "2027-10", "2027-11", "2027-12", "2028-01", "2028-02", "2028-03"], "aop": [0.569, 0.548, 0.659, 0.617, 0.635, 0.541, 0.685, 0.591, 0.555, 0.581, 0.753, 0.742, 0.674, 0.679, 0.8, 0.86, 0.735, 0.656, 0.656, 0.596, 0.589, 0.658, 0.973, 0.809, 0.647, 0.612, 0.599, 0.615, 0.398, 0.432, 0.689, 0.73, 0.774, 0.867, 0.997, 1.077, 1.165, 1.247, 1.352, 1.432, 1.506, 1.597, 1.692, 1.785, 1.875, 2.062, 2.31, 2.471, 2.644, 2.803, 2.971], "actual": {"2026-07": 2.533, "2026-08": 9.893}, "ymax": 11, "distB": [0, 12, 4, 4, 2, 7, 3, 22, 63, 81, 189], "distP": [0, 8, 3, 6, 1, 12, 14, 24, 55, 91, 173]};
+
+// ---- tab switching (vanilla, no external libs) ----
+document.querySelectorAll('#nav a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('#nav a').forEach(x=>x.classList.remove('active'));
+    document.getElementById(a.dataset.t).classList.add('active');
+    a.classList.add('active');
+    window.scrollTo(0,0);
+  });
+});
+
+// ---- NPS distribution bars ----
+function renderVbars(elId, dist){
+  const max=Math.max(...dist,1), wrap=document.getElementById(elId);
+  if(!wrap) return;
+  dist.forEach((v,i)=>{
+    const col = i>=9 ? '#1a7f37' : (i>=7 ? '#94a3b8' : '#c0392b');
+    const d=document.createElement('div'); d.className='vbar';
+    d.title='Score '+i+': '+v+' responses';
+    d.innerHTML='<div class="t">'+v+'</div><div class="b" style="height:'+Math.max(2,v/max*100)+'%;background:'+col+'"></div><div class="x">'+i+'</div>';
+    wrap.appendChild(d);
+  });
+}
+renderVbars('distB', DATA.distB);
+renderVbars('distP', DATA.distP);
+
+// ---- revenue trend: AOP dashed line + actual bars + hover tooltip ----
+(function(){
+  const M=DATA.months, A=DATA.aop, ACT=DATA.actual, YMAX=DATA.ymax;
+  const W=900,H=250,L=46,R=14,T=14,B=30;
+  const svg=document.getElementById('trend');
+  if(!svg) return;
+  const X=i=>L+(W-L-R)*i/(M.length-1), Y=v=>T+(H-T-B)*(1-v/YMAX);
+  let s='';
+  for(let g=0;g<=YMAX;g+=2){
+    s+='<line x1="'+L+'" y1="'+Y(g)+'" x2="'+(W-R)+'" y2="'+Y(g)+'" stroke="#eef1f5"/>'
+      +'<text x="'+(L-6)+'" y="'+(Y(g)+4)+'" font-size="10" fill="#94a3b8" text-anchor="end">'+g+'Cr</text>';
+  }
+  [0,12,24,31,42,M.length-1].forEach(i=>{
+    s+='<text x="'+X(i)+'" y="'+(H-8)+'" font-size="10" fill="#94a3b8" text-anchor="middle">'+M[i]+'</text>';
+  });
+  for(const m in ACT){
+    const i=M.indexOf(m); if(i<0) continue;
+    s+='<rect x="'+(X(i)-13)+'" y="'+Y(ACT[m])+'" width="26" height="'+(Y(0)-Y(ACT[m]))+'" fill="#3b82f6" rx="3" opacity="0.9"/>';
+    s+='<text x="'+X(i)+'" y="'+(Y(ACT[m])-6)+'" font-size="10" fill="#1d4ed8" text-anchor="middle">₹'+ACT[m].toFixed(2)+'Cr</text>';
+  }
+  const splitM=Object.keys(ACT).sort().pop();
+  const sp=M.indexOf(splitM||M[M.length-1]);
+  s+='<line x1="'+X(sp)+'" y1="'+T+'" x2="'+X(sp)+'" y2="'+(H-B)+'" stroke="#c62828" stroke-dasharray="5 4" stroke-width="1.5"/>';
+  let pts=''; A.forEach((v,i)=>{ if(v!=null) pts+=X(i)+','+Y(v)+' '; });
+  s+='<polyline points="'+pts+'" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 4"/>';
+  s+='<text x="'+(W-R)+'" y="'+(T+10)+'" font-size="10" fill="#6b7280" text-anchor="end">AOP ₹Cr (Gels portfolio)</text>';
+  svg.innerHTML=s;
+  const tip=document.getElementById('tip');
+  svg.addEventListener('mousemove',e=>{
+    const r=svg.getBoundingClientRect();
+    const mx=(e.clientX-r.left)*(W/r.width);
+    let i=Math.round((mx-L)/((W-L-R)/(M.length-1)));
+    i=Math.max(0,Math.min(M.length-1,i));
+    let t='<b>'+M[i]+'</b><br>AOP: '+(A[i]!=null?'₹'+A[i].toFixed(2)+'Cr':'—');
+    if(ACT[M[i]]) t+='<br>Actual: ₹'+ACT[M[i]].toFixed(2)+'Cr';
+    tip.innerHTML=t; tip.style.display='block';
+    tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY+12)+'px';
+  });
+  svg.addEventListener('mouseleave',()=>{ tip.style.display='none'; });
+})();
+
+// ---- sortable tables ----
+function parseNum(td){
+  if(!td) return null;
+  let t=td.textContent.trim().replace(/[₹,%\s]/g,'');
+  if(t===''||t==='—'||t==='N/A') return null;
+  const n=parseFloat(t.replace(/,/g,''));
+  return isNaN(n)?null:n;
+}
+function sortCol(tb, th, idx){
+  const all=Array.from(tb.querySelectorAll('tr'));
+  const header=all[0];
+  const totals=all.filter(r=>r.classList.contains('total'));
+  const rows=all.filter(r=>r!==header && !r.classList.contains('total'));
+  const asc = th.dataset.asc!=='true';
+  document.querySelectorAll('th').forEach(h=>h.classList.remove('sorted'));
+  th.classList.add('sorted'); th.dataset.asc=asc;
+  rows.sort((a,b)=>{
+    const an=parseNum(a.cells[idx]), bn=parseNum(b.cells[idx]);
+    if(an!=null && bn!=null) return asc? an-bn : bn-an;
+    return asc ? a.cells[idx].textContent.localeCompare(b.cells[idx].textContent)
+               : b.cells[idx].textContent.localeCompare(a.cells[idx].textContent);
+  });
+  rows.forEach(r=>tb.appendChild(r));
+  totals.forEach(r=>tb.appendChild(r));
+}
+document.querySelectorAll('table.tbl').forEach(tb=>{
+  tb.querySelectorAll('th').forEach((th,i)=>{
+    th.classList.add('sortable');
+    th.title='Click to sort';
+    th.addEventListener('click',()=>sortCol(tb,th,i));
+  });
+});
+
+// ---- Voice of Customer search ----
+function vocFilter(){
+  const q=(document.getElementById('vocSearch').value||'').toLowerCase();
+  const rows=Array.from(document.querySelectorAll('#vocTable tr')).slice(1);
+  let n=0;
+  rows.forEach(r=>{
+    const hit=!q || r.textContent.toLowerCase().includes(q);
+    r.style.display=hit?'':'none';
+    if(hit) n++;
+  });
+  const c=document.getElementById('vocCount');
+  if(c) c.textContent='Showing '+n+' of '+rows.length+' remarks'+(q?' matching “'+q+'”':'');
+}
+</script>
+</body>
+</html>
